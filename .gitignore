@@ -4,10 +4,10 @@ jspm_packages/
 bower_components/
 
 # Build outputs
-dist/
 build/
 out/
 *.min.js
+*.map
 
 # IDE and editors
 .vscode/

@@ -17,7 +17,7 @@ A UserScript that automatically sets the language to Japanese on NicoNico websit
 ## Installation
 
 1. Install a UserScript manager ([Tampermonkey](https://www.tampermonkey.net/), [Violentmonkey](https://violentmonkey.github.io/), or [Greasemonkey](https://www.greasespot.net/))
-2. [Click here to install the latest version](https://github.com/PiesP/niconico-auto-set-language/raw/master/niconico-auto-set-language.user.js)
+2. [Click here to install the latest version](https://github.com/PiesP/niconico-auto-set-language/raw/master/dist/niconico-auto-set-language.user.js)
 3. Confirm installation in your UserScript manager
 
 ## Usage

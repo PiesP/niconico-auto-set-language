@@ -1,0 +1,16 @@
+{
+  "name": "niconico-auto-set-language",
+  "version": "0.9.1",
+  "description": "Automatically set language to Japanese on NicoNico",
+  "scripts": {
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "build": "terser \"src/niconico-auto-set-language.user.js\" -o \"dist/niconico-auto-set-language.user.js\" -c -m --comments \"/==UserScript==/,/==\\/UserScript==/\" --source-map"
+  },
+  "devDependencies": {
+    "terser": "^5.19.2",
+    "rimraf": "^5.0.1",
+    "cross-env": "^7.0.3"
+  },
+  "private": true
+}
