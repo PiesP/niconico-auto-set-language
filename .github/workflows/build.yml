@@ -3,10 +3,6 @@ name: Build
 on:
   push:
     branches: [ master ]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
   pull_request:
     branches: [ master ]
   workflow_dispatch:
@@ -21,20 +17,24 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
-        cache: 'npm'
-    
+        node-version: '16.x'
+        
     - name: Install dependencies
       run: npm ci
-    
+      
     - name: Build
-      run: npm run build
-    
-    - name: Commit build artifacts
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add dist/
-        git commit -m "chore: update build artifacts" || exit 0
-        git push
+        npm run build
+        
+    - name: Verify UserScript metadata
+      run: |
+        if ! grep -q "// ==UserScript==" dist/niconico-auto-set-language.user.js; then
+          echo "Error: UserScript metadata is missing from the build output"
+          exit 1
+        fi
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: dist/
