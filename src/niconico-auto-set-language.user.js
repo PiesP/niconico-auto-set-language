@@ -42,7 +42,7 @@
     
     function isAlreadyJapanese() {
         if (document.documentElement.lang === userSettings.language) {
-            log('언어가 이미 일본어로 설정되어 있습니다. 스크립트를 종료합니다.');
+            log('Language is already set to Japanese. Exiting script.');
             return true;
         }
         return false;
@@ -84,37 +84,37 @@
     function handleError(error, message) {
         console.error(`[NicoNico Language] ${message}:`, error);
         if (userSettings.showNotification) {
-            showNotification(`오류: ${message}`, 5000, 'error');
+            showNotification(`Error: ${message}`, 5000, 'error');
         }
     }
 
     function changeLanguage(languageItem, languageForm) {
         if (!languageItem?.getAttribute || !languageForm?.querySelector) {
-            log('언어 선택에 필요한 UI 요소를 찾을 수 없습니다.');
+            log('Could not find UI elements required for language selection.');
             return false;
         }
         
         try {
             const languageInput = languageForm.querySelector('input[name="language"]');
             if (!languageInput) {
-                throw new Error('언어 입력 필드를 찾을 수 없습니다.');
+                throw new Error('Language input field not found.');
             }
 
             if (languageItem.getAttribute('data-value') === userSettings.language) {
-                log('언어가 이미 일본어로 설정되어 있습니다.');
+                log('Language is already set to Japanese.');
                 return false;
             }
 
             languageInput.value = userSettings.language;
             
             if (userSettings.showNotification) {
-                showNotification('언어를 일본어로 변경 중입니다...');
+                showNotification('Changing language to Japanese...');
             }
             
             languageForm.submit();
             return true;
         } catch (error) {
-            handleError(error, '언어 설정 변경 중 오류 발생');
+            handleError(error, 'Error occurred while changing language settings');
             return false;
         }
     }
@@ -147,7 +147,7 @@
     
     function initialize() {
         if (!userSettings.enabled) {
-            log('스크립트가 비활성화되어 있습니다.');
+            log('Script is disabled.');
             return;
         }
         
@@ -157,7 +157,7 @@
         if (elements.languageItem && elements.languageForm) {
             changeLanguage(elements.languageItem, elements.languageForm);
         } else {
-            log('언어 선택 요소를 찾을 수 없습니다. DOM 변경 감지를 시작합니다.');
+            log('Language selection elements not found. Starting DOM change detection.');
             setupMutationObserver();
         }
     }
@@ -190,7 +190,7 @@
         
         window._nicoLangTimeout = setTimeout(() => {
             cleanupObserver();
-            log('언어 요소를 찾을 수 없습니다. 관찰이 타임아웃되었습니다.');
+            log('Language elements not found. Observation timed out.');
         }, 5000);
     }
 
@@ -229,10 +229,10 @@
     }
     
     if (typeof GM_registerMenuCommand === 'function') {
-        GM_registerMenuCommand('스크립트 활성화/비활성화', () => {
+        GM_registerMenuCommand('Toggle Script', () => {
             userSettings.enabled = !userSettings.enabled;
             saveSettings();
-            showNotification(`스크립트가 ${userSettings.enabled ? '활성화' : '비활성화'}되었습니다.`);
+            showNotification(`Script has been ${userSettings.enabled ? 'enabled' : 'disabled'}.`);
             if (userSettings.enabled) initialize();
         });
     }
