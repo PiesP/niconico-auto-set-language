@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          fetch-tags: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -38,20 +38,14 @@ jobs:
       - name: Verify pnpm available
         run: pnpm -v
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm run build
-
       - name: Derive version from tag
         shell: bash
         run: |
           set -euo pipefail
           TAG="${{ inputs.tag || github.ref_name }}"
+          # Accept both "v0.9.2" and "0.9.2" for workflow_dispatch.
           if [[ "$TAG" != v* ]]; then
-            echo "Error: tag must start with 'v' (got: $TAG)" >&2
-            exit 1
+            TAG="v$TAG"
           fi
           VERSION="${TAG#v}"
           if [[ -z "$VERSION" ]]; then
@@ -61,6 +55,19 @@ jobs:
 
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Checkout release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          git checkout --progress --force "refs/tags/${RELEASE_TAG}"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
 
       - name: Sync userscript @version to tag
         shell: bash
@@ -95,37 +102,40 @@ jobs:
           import re
           from pathlib import Path
 
-          repo = os.environ.get("GITHUB_REPOSITORY", "")
-          if not repo:
-            raise SystemExit("GITHUB_REPOSITORY is missing")
+          def main() -> None:
+            repo = os.environ.get("GITHUB_REPOSITORY", "")
+            if not repo:
+              raise SystemExit("GITHUB_REPOSITORY is missing")
 
-          url = f"https://github.com/{repo}/releases/latest/download/niconico-auto-set-language.user.js"
+            url = f"https://github.com/{repo}/releases/latest/download/niconico-auto-set-language.user.js"
 
-          p = Path("dist/niconico-auto-set-language.user.js")
-          text = p.read_text(encoding="utf-8")
+            p = Path("dist/niconico-auto-set-language.user.js")
+            text = p.read_text(encoding="utf-8")
 
-          def upsert(key: str) -> None:
-            nonlocal text
-            pat = re.compile(rf"^//\\s*@{re.escape(key)}\\s+.*$", re.MULTILINE)
-            repl = f"// @{key}  {url}"
-            if pat.search(text):
-              text = pat.sub(repl, text, count=1)
-              return
-            # Insert after @match if present, else after @description, else after @version
-            for anchor in ("@match", "@description", "@version"):
-              a = re.search(rf"^//\\s*{re.escape(anchor)}.*$", text, re.MULTILINE)
-              if a:
-                idx = a.end()
-                text = text[:idx] + "\n" + repl + text[idx:]
+            def upsert(key: str) -> None:
+              nonlocal text
+              pat = re.compile(rf"^//\\s*@{re.escape(key)}\\s+.*$", re.MULTILINE)
+              repl = f"// @{key}  {url}"
+              if pat.search(text):
+                text = pat.sub(repl, text, count=1)
                 return
-            # Fallback: prepend under ==UserScript==
-            text = text.replace("// ==UserScript==", "// ==UserScript==\n" + repl, 1)
+              # Insert after @match if present, else after @description, else after @version
+              for anchor in ("@match", "@description", "@version"):
+                a = re.search(rf"^//\\s*{re.escape(anchor)}.*$", text, re.MULTILINE)
+                if a:
+                  idx = a.end()
+                  text = text[:idx] + "\n" + repl + text[idx:]
+                  return
+              # Fallback: prepend under ==UserScript==
+              text = text.replace("// ==UserScript==", "// ==UserScript==\n" + repl, 1)
 
-          upsert("downloadURL")
-          upsert("updateURL")
+            upsert("downloadURL")
+            upsert("updateURL")
 
-          p.write_text(text, encoding="utf-8")
-          print("Synced @downloadURL/@updateURL ->", url)
+            p.write_text(text, encoding="utf-8")
+            print("Synced @downloadURL/@updateURL ->", url)
+
+          main()
           PY
 
       - name: Build minified
@@ -171,7 +181,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag && (startsWith(inputs.tag, 'v') && inputs.tag || format('v{0}', inputs.tag)) || github.ref_name }}
           generate_release_notes: true
           files: |
             dist/niconico-auto-set-language.user.js
