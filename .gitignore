@@ -60,3 +60,6 @@ desktop.ini
 
 # Yarn Integrity file
 .yarn-integrity
+
+# TypeScript build info
+*.tsbuildinfo

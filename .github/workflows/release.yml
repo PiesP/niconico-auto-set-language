@@ -1,0 +1,176 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.9.1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.25.0"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Derive version from tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag || github.ref_name }}"
+          if [[ "$TAG" != v* ]]; then
+            echo "Error: tag must start with 'v' (got: $TAG)" >&2
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          if [[ -z "$VERSION" ]]; then
+            echo "Error: derived version is empty" >&2
+            exit 1
+          fi
+
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Sync userscript @version to tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          version = os.environ["RELEASE_VERSION"]
+          p = Path("dist/niconico-auto-set-language.user.js")
+          text = p.read_text(encoding="utf-8")
+
+          # Keep alignment: "// @version      X"
+          pat = re.compile(r"^//\s*@version\s+.*$", re.MULTILINE)
+          repl = f"// @version      {version}"
+          new_text, n = pat.subn(repl, text, count=1)
+          if n != 1:
+            raise SystemExit(f"Expected to replace exactly 1 @version line, replaced {n}")
+
+          p.write_text(new_text, encoding="utf-8")
+          print(f"Synced @version -> {version}")
+          PY
+
+      - name: Sync userscript updateURL/downloadURL (GitHub Releases)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          if not repo:
+            raise SystemExit("GITHUB_REPOSITORY is missing")
+
+          url = f"https://github.com/{repo}/releases/latest/download/niconico-auto-set-language.user.js"
+
+          p = Path("dist/niconico-auto-set-language.user.js")
+          text = p.read_text(encoding="utf-8")
+
+          def upsert(key: str) -> None:
+            nonlocal text
+            pat = re.compile(rf"^//\\s*@{re.escape(key)}\\s+.*$", re.MULTILINE)
+            repl = f"// @{key}  {url}"
+            if pat.search(text):
+              text = pat.sub(repl, text, count=1)
+              return
+            # Insert after @match if present, else after @description, else after @version
+            for anchor in ("@match", "@description", "@version"):
+              a = re.search(rf"^//\\s*{re.escape(anchor)}.*$", text, re.MULTILINE)
+              if a:
+                idx = a.end()
+                text = text[:idx] + "\n" + repl + text[idx:]
+                return
+            # Fallback: prepend under ==UserScript==
+            text = text.replace("// ==UserScript==", "// ==UserScript==\n" + repl, 1)
+
+          upsert("downloadURL")
+          upsert("updateURL")
+
+          p.write_text(text, encoding="utf-8")
+          print("Synced @downloadURL/@updateURL ->", url)
+          PY
+
+      - name: Build minified
+        run: pnpm run build:min
+
+      - name: Verify UserScript metadata
+        run: |
+          if ! head -n 1 dist/niconico-auto-set-language.user.js | grep -q "// ==UserScript=="; then
+            echo "Error: UserScript metadata is missing from the build output"
+            exit 1
+          fi
+          if ! grep -q "^// @version[[:space:]]\+${RELEASE_VERSION}$" dist/niconico-auto-set-language.user.js; then
+            echo "Error: @version does not match tag-derived version (${RELEASE_VERSION})"
+            echo "Found:"
+            grep -n "^// @version" dist/niconico-auto-set-language.user.js || true
+            exit 1
+          fi
+
+          if ! grep -q "^// @downloadURL" dist/niconico-auto-set-language.user.js; then
+            echo "Error: @downloadURL missing"
+            exit 1
+          fi
+
+          if ! grep -q "^// @updateURL" dist/niconico-auto-set-language.user.js; then
+            echo "Error: @updateURL missing"
+            exit 1
+          fi
+
+          if [ ! -f dist/niconico-auto-set-language.user.min.js ]; then
+            echo "Error: Minified build output is missing"
+            exit 1
+          fi
+
+      # Publish dist/ contents to release branch root
+      - name: Publish to release branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: release
+          publish_dir: ./dist
+          force_orphan: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/niconico-auto-set-language.user.js
+            dist/niconico-auto-set-language.user.min.js
+            dist/niconico-auto-set-language.user.min.js.map

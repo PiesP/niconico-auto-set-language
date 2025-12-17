@@ -2,15 +2,37 @@
   "name": "niconico-auto-set-language",
   "version": "0.9.1",
   "description": "Automatically set language to Japanese on NicoNico",
+  "packageManager": "pnpm@10.25.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  },
   "scripts": {
     "clean": "rimraf dist",
-    "prebuild": "npm run clean",
-    "build": "terser src/niconico-auto-set-language.user.js -o dist/niconico-auto-set-language.user.js -c -m --comments '/==UserScript==/' --source-map"
+    "build:ts": "tsc --project tsconfig.build.json",
+    "build:min": "terser dist/niconico-auto-set-language.user.js -o dist/niconico-auto-set-language.user.min.js -c directives=false -m --comments '/^\\s*==UserScript==|^\\s*@|^\\s*==\\/UserScript==/' --source-map",
+    "build:dev": "pnpm run clean && pnpm run build:ts",
+    "build:fast": "pnpm run build:dev",
+    "check": "tsc --noEmit --project tsconfig.build.json",
+    "typecheck": "pnpm run check",
+    "lint": "biome lint ./src",
+    "lint:fix": "biome lint --write ./src",
+    "fmt": "biome format --write ./src",
+    "fmt:check": "biome format ./src",
+    "quality": "pnpm run check && biome check ./src",
+    "quality:fix": "pnpm run check && biome check --write ./src",
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "preinstall": "npx only-allow pnpm",
+    "prebuild": "pnpm run quality",
+    "build": "pnpm run clean && pnpm run build:ts",
+    "verify": "pnpm run build && pnpm run build:min"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "@types/tampermonkey": "^5.0.4",
     "terser": "^5.19.2",
     "rimraf": "^5.0.1",
-    "cross-env": "^7.0.3"
+    "typescript": "^5.9.3"
   },
   "private": true
 }
