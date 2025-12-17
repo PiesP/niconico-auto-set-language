@@ -48,29 +48,29 @@ Tested and compatible with:
 
 ## Development
 
-이 프로젝트는 **pnpm + TypeScript** 기반으로 개발하며, 빌드 결과 userscript 파일은 `dist/`에 생성됩니다.
+This project is developed with **pnpm + TypeScript**, and the built userscript files are generated in `dist/`.
 
-### 주요 스크립트
+### Main Scripts
 
-- `pnpm check`: TypeScript 타입체크(emit 없음)
-- `pnpm quality`: 타입체크 + biome check (CI/PR에 권장)
-- `pnpm build`: clean + TS 빌드 + terser 최소화(배포용 `dist/` 생성)
-- `pnpm build:dev`: 최소화 없이 TS 빌드만 수행
-- `pnpm dev`: TypeScript watch 모드
+- `pnpm check`: TypeScript type check (no emit)
+- `pnpm quality`: Type check + biome check (recommended for CI/PR)
+- `pnpm build`: clean + TS build + terser minification (generates `dist/` for distribution)
+- `pnpm build:dev`: TS build only without minification
+- `pnpm dev`: TypeScript watch mode
 
-### 작업 흐름
+### Workflow
 
-1. `src/niconico-auto-set-language.user.ts` 를 수정
-2. 개발 중 빠른 확인은 `pnpm build:dev` 또는 `pnpm dev`
-3. 배포 전에는 `pnpm quality` 후 `pnpm build`
-4. 배포 시 userscript 메타데이터의 `@version` 갱신
+1. Modify `src/niconico-auto-set-language.user.ts`
+2. For quick checks during development, use `pnpm build:dev` or `pnpm dev`
+3. Before release, run `pnpm quality` then `pnpm build`
+4. Update the `@version` in userscript metadata when releasing
 
-### Greasy Fork 업로드 주의
+### Greasy Fork Upload Notice
 
-Greasy Fork는 게시되는 스크립트가 **최소화/난독화되지 않은(읽을 수 있는) 코드**이기를 요구합니다.
+Greasy Fork requires that published scripts be **non-minified/non-obfuscated (readable) code**.
 
-- Greasy Fork에는 `dist/niconico-auto-set-language.user.js`(비-최소화)를 업로드하세요.
-- `dist/*.min.js`(최소화 버전)는 GitHub 배포용으로만 사용하세요.
+- Upload `dist/niconico-auto-set-language.user.js` (non-minified) to Greasy Fork.
+- Use `dist/*.min.js` (minified version) only for GitHub releases.
 
 ## Contributing
 
