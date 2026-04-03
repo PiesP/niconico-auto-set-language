@@ -9,6 +9,7 @@
 
     "strict": true,
     "alwaysStrict": false,
+    "ignoreDeprecations": "6.0",
     "noUncheckedIndexedAccess": true,
 
     "types": ["tampermonkey"],
