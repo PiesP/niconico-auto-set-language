@@ -63,3 +63,4 @@ desktop.ini
 
 # TypeScript build info
 *.tsbuildinfo
+.editorconfig
