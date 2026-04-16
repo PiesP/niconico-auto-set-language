@@ -17,8 +17,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Guard unsupported pnpm/action-setup majors
+        run: |
+          if grep -REn 'uses:[[:space:]]*pnpm/action-setup@v([5-9]|[1-9][0-9]+)' .github/workflows; then
+            echo "pnpm/action-setup major >=5 is blocked until the pnpm 10 install regression is fixed upstream." >&2
+            exit 1
+          fi
+
+      # pnpm/action-setup@v6 can route pnpm 10 projects through a pnpm 11
+      # launcher on GitHub Actions, which breaks install with
+      # ERR_PNPM_BROKEN_LOCKFILE. Keep v4 until that upstream regression is fixed.
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
           version: "10.25.0"
 
