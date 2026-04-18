@@ -1,78 +1,86 @@
-name: Release
+name: "🚀 Release"
 
-on:
+# Responsibility: Publish tagged userscript releases
+# - Build release assets from the tagged commit
+# - Sync userscript metadata to the release version and CDN URLs
+# - Publish files to the release branch and GitHub Releases
+#
+# Trigger: Tag push (v*)
+
+'on':
   push:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Existing tag to release (e.g. v0.9.1)"
-        required: true
-        type: string
+
+env:
+  NODE_VERSION: "24"
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
+    name: "🚀 Publish Release"
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout code
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: 🛡️ Guard unsupported pnpm/action-setup majors
+        run: |
+          set -euo pipefail
+          if grep -REn 'uses:[[:space:]]*pnpm/action-setup@v([5-9]|[1-9][0-9]+)' .github/workflows; then
+            echo "pnpm/action-setup major >=5 is blocked until the pnpm 10 install regression is fixed upstream." >&2
+            exit 1
+          fi
+
       # pnpm/action-setup@v6 can route pnpm 10 projects through a pnpm 11
       # launcher on GitHub Actions, which breaks install with
       # ERR_PNPM_BROKEN_LOCKFILE. Keep v4 until that upstream regression is fixed.
-      - name: Setup pnpm
+      - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: "10.25.0"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
-      - name: Verify pnpm available
+      - name: 🔎 Verify pnpm available
         run: pnpm -v
 
-      - name: Derive version from tag
+      - name: 📝 Determine version
+        id: version
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ inputs.tag || github.ref_name }}"
-          # Accept both "v0.9.2" and "0.9.2" for workflow_dispatch.
-          if [[ "$TAG" != v* ]]; then
-            TAG="v$TAG"
-          fi
-          VERSION="${TAG#v}"
+          VERSION="${GITHUB_REF_NAME#v}"
           if [[ -z "$VERSION" ]]; then
             echo "Error: derived version is empty" >&2
             exit 1
           fi
 
-          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
 
-      - name: Checkout release tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --tags --force
-          git checkout --progress --force "refs/tags/${RELEASE_TAG}"
-
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
+      - name: 🏗️ Build userscript
         run: pnpm run build
 
-      - name: Sync userscript @version to tag
+      - name: 🔧 Sync userscript @version to tag
         shell: bash
         run: |
           set -euo pipefail
@@ -85,7 +93,6 @@ jobs:
           p = Path("dist/niconico-auto-set-language.user.js")
           text = p.read_text(encoding="utf-8")
 
-          # Keep alignment: "// @version      X"
           pat = re.compile(r"^//\s*@version\s+.*$", re.MULTILINE)
           repl = f"// @version      {version}"
           new_text, n = pat.subn(repl, text, count=1)
@@ -96,7 +103,7 @@ jobs:
           print(f"Synced @version -> {version}")
           PY
 
-      - name: Sync userscript updateURL/downloadURL (GitHub Releases)
+      - name: 🔗 Sync userscript updateURL/downloadURL
         shell: bash
         run: |
           set -euo pipefail
@@ -122,58 +129,51 @@ jobs:
               if pat.search(text):
                 text = pat.sub(repl, text, count=1)
                 return
-              # Insert after @match if present, else after @description, else after @version
               for anchor in ("@match", "@description", "@version"):
                 a = re.search(rf"^//\\s*{re.escape(anchor)}.*$", text, re.MULTILINE)
                 if a:
                   idx = a.end()
                   text = text[:idx] + "\n" + repl + text[idx:]
                   return
-              # Fallback: prepend under ==UserScript==
               text = text.replace("// ==UserScript==", "// ==UserScript==\n" + repl, 1)
 
             upsert("downloadURL")
             upsert("updateURL")
-
             p.write_text(text, encoding="utf-8")
             print("Synced @downloadURL/@updateURL ->", url)
 
           main()
           PY
 
-      - name: Build minified
+      - name: 🗜️ Build minified userscript
         run: pnpm run build:min
 
-      - name: Verify UserScript metadata
+      - name: 🧪 Verify UserScript metadata
         run: |
+          set -euo pipefail
           if ! head -n 1 dist/niconico-auto-set-language.user.js | grep -q "// ==UserScript=="; then
             echo "Error: UserScript metadata is missing from the build output"
             exit 1
           fi
           if ! grep -q "^// @version[[:space:]]\+${RELEASE_VERSION}$" dist/niconico-auto-set-language.user.js; then
             echo "Error: @version does not match tag-derived version (${RELEASE_VERSION})"
-            echo "Found:"
             grep -n "^// @version" dist/niconico-auto-set-language.user.js || true
             exit 1
           fi
-
           if ! grep -q "^// @downloadURL" dist/niconico-auto-set-language.user.js; then
             echo "Error: @downloadURL missing"
             exit 1
           fi
-
           if ! grep -q "^// @updateURL" dist/niconico-auto-set-language.user.js; then
             echo "Error: @updateURL missing"
             exit 1
           fi
-
           if [ ! -f dist/niconico-auto-set-language.user.min.js ]; then
             echo "Error: Minified build output is missing"
             exit 1
           fi
 
-      # Publish dist/ contents to release branch root
-      - name: Publish to release branch
+      - name: 📤 Publish to release branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -181,12 +181,14 @@ jobs:
           publish_dir: ./dist
           force_orphan: true
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ inputs.tag && (startsWith(inputs.tag, 'v') && inputs.tag || format('v{0}', inputs.tag)) || github.ref_name }}
+          tag_name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
             dist/niconico-auto-set-language.user.js
             dist/niconico-auto-set-language.user.min.js
             dist/niconico-auto-set-language.user.min.js.map
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
