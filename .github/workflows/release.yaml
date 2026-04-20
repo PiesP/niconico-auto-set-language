@@ -78,7 +78,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🏗️ Build userscript
-        run: pnpm run build
+        run: pnpm build
 
       - name: 🔧 Sync userscript @version to tag
         shell: bash
@@ -146,7 +146,7 @@ jobs:
           PY
 
       - name: 🗜️ Build minified userscript
-        run: pnpm run build:min
+        run: pnpm build:min
 
       - name: 🧪 Verify UserScript metadata
         run: |
@@ -192,3 +192,11 @@ jobs:
             dist/niconico-auto-set-language.user.min.js.map
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-v${{ steps.version.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
