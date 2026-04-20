@@ -25,9 +25,9 @@
         error: '#f44336',
         info: '#2196F3',
     };
-    const TOAST_STYLE_BASE = 'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;'
-        + 'z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;'
-        + 'box-shadow:0 2px 10px rgba(0,0,0,.18)';
+    const TOAST_STYLE_BASE = 'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;' +
+        'z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;' +
+        'box-shadow:0 2px 10px rgba(0,0,0,.18)';
     let settings = loadSettings();
     let observer = null;
     let observeTimeout = null;

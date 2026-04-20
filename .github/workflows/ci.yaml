@@ -18,6 +18,7 @@ name: "🏗️ CI"
 
 env:
   NODE_VERSION: "24"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 permissions:
   contents: read
@@ -46,10 +47,10 @@ jobs:
       # pnpm/action-setup@v6 can route pnpm 10 projects through a pnpm 11
       # launcher on GitHub Actions, which breaks install with
       # ERR_PNPM_BROKEN_LOCKFILE. Keep v4 until that upstream regression is fixed.
+      # Do not also set `with.version` here: the repository-wide `packageManager`
+      # field is the single source of truth for the pnpm 10 version we expect.
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: "10.25.0"
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v6
