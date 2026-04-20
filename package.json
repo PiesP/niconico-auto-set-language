@@ -2,10 +2,10 @@
   "name": "niconico-auto-set-language",
   "version": "0.9.1",
   "description": "Automatically set language to Japanese on NicoNico",
-  "packageManager": "pnpm@10.25.0",
+  "packageManager": "pnpm@10.29.2",
   "engines": {
     "node": ">=24.0.0",
-    "pnpm": ">=10.0.0"
+    "pnpm": ">=10.29.2"
   },
   "scripts": {
     "clean": "rimraf dist",
@@ -14,13 +14,15 @@
     "build:dev": "pnpm run clean && pnpm run build:ts",
     "build:fast": "pnpm run build:dev",
     "check": "tsc --noEmit --project tsconfig.build.json",
-    "typecheck": "pnpm run check",
-    "lint": "biome lint ./src",
-    "lint:fix": "biome lint --write ./src",
-    "fmt": "biome format --write ./src",
-    "fmt:check": "biome format ./src",
-    "quality": "pnpm run check && biome check ./src",
-    "quality:fix": "pnpm run check && biome check --write ./src",
+    "typecheck": "pnpm -s check",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "fmt": "biome check --linter-enabled=false .",
+    "fmt:fix": "biome check --write --linter-enabled=false .",
+    "fmt:check": "pnpm -s fmt",
+    "quality": "pnpm -s fmt && pnpm -s lint && pnpm -s check",
+    "quality:fix": "pnpm -s fmt:fix && pnpm -s lint:fix && pnpm -s check",
+    "quality:ci": "pnpm -s quality",
     "dev": "tsc --watch --project tsconfig.build.json",
     "preinstall": "npx only-allow pnpm",
     "prebuild": "pnpm run quality",
@@ -36,6 +38,7 @@
   },
   "private": true,
   "volta": {
-    "node": "24.15.0"
+    "node": "24.15.0",
+    "pnpm": "10.29.2"
   }
 }

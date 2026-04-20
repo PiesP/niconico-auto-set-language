@@ -53,8 +53,13 @@ This project is developed with **pnpm + TypeScript**, and the built userscript f
 ### Main Scripts
 
 - `pnpm check`: TypeScript type check (no emit)
-- `pnpm quality`: Type check + biome check (recommended for CI/PR)
-- `pnpm build`: clean + TS build + terser minification (generates `dist/` for distribution)
+- `pnpm typecheck`: Alias for `pnpm check`
+- `pnpm fmt`: Biome format check
+- `pnpm fmt:fix`: Biome format fix
+- `pnpm quality`: Format check + lint + type check (recommended for CI/PR)
+- `pnpm quality:fix`: Apply formatting/lint fixes, then rerun the same quality gate
+- `pnpm build`: Clean + TypeScript build (generates the readable userscript in `dist/`)
+- `pnpm verify`: `pnpm build` + `pnpm build:min` (generates the minified release artifact)
 - `pnpm build:dev`: TS build only without minification
 - `pnpm dev`: TypeScript watch mode
 
@@ -62,7 +67,7 @@ This project is developed with **pnpm + TypeScript**, and the built userscript f
 
 1. Modify `src/niconico-auto-set-language.user.ts`
 2. For quick checks during development, use `pnpm build:dev` or `pnpm dev`
-3. Before release, run `pnpm quality` then `pnpm build`
+3. Before release, run `pnpm quality` and then `pnpm verify` (or `pnpm build` if you only need the readable userscript)
 4. Update the `@version` in userscript metadata when releasing
 
 ### Greasy Fork Upload Notice
