@@ -50,6 +50,8 @@ Tested and compatible with:
 
 This project is developed with **pnpm + TypeScript**, and the built userscript files are generated in `dist/`.
 
+Prerequisites: Volta Node.js `24.15.0` (project default) or engines-compatible Node.js `>=24.0.0`, pnpm `>=10.29.2`
+
 ### Main Scripts
 
 - `pnpm check`: TypeScript type check (no emit)
@@ -70,6 +72,12 @@ This project is developed with **pnpm + TypeScript**, and the built userscript f
 3. Before release, run `pnpm quality` and then `pnpm verify` (or `pnpm build` if you only need the readable userscript)
 4. Update the `@version` in userscript metadata when releasing
 
+### Developer docs
+
+- Contributor workflow: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Coding policy: [CODE_STANDARDS.md](./CODE_STANDARDS.md)
+- Manual verification: [TESTING.md](./TESTING.md)
+
 ### Greasy Fork Upload Notice
 
 Greasy Fork requires that published scripts be **non-minified/non-obfuscated (readable) code**.
@@ -79,7 +87,7 @@ Greasy Fork requires that published scripts be **non-minified/non-obfuscated (re
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request or create an Issue if you encounter any problems or have suggestions for improvements.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the standard development flow, PR checklist, and project constraints.
 
 ## Acknowledgements
 
