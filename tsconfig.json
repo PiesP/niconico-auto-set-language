@@ -11,6 +11,10 @@
     "alwaysStrict": false,
     "ignoreDeprecations": "6.0",
     "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true,
 
     "types": ["tampermonkey"],
     "skipLibCheck": true,

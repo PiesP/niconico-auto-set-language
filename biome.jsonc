@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -27,18 +27,22 @@
       },
       "style": {
         "noNonNullAssertion": "off",
-        "noParameterAssign": "warn",
-        "useConst": "error"
+        "useConst": "error",
+        "noParameterAssign": "warn"
       },
       "suspicious": {
-        "noExplicitAny": "warn",
+        "noExplicitAny": "error",
         "noConfusingVoidType": "off",
         "noControlCharactersInRegex": "off",
-        "noDocumentCookie": "off"
+        "noDocumentCookie": "off",
+        "noImplicitAnyLet": "error"
       },
       "complexity": {
         "noForEach": "off",
         "noStaticOnlyClass": "off"
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn"
       }
     }
   },
