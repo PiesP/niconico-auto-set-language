@@ -1,0 +1,80 @@
+# Dependabot configuration for niconico-auto-set-language
+# Stack: TypeScript + Biome + Terser (userscript)
+#
+# References:
+#   https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#   https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/about-dependabot-version-updates#about-ecosystems
+
+version: 2
+updates:
+  # ── npm (pnpm) ──────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # pnpm does not support Dependabot transitive dependency bump updates.
+    # Keep updates to direct dependencies to avoid failing update jobs.
+    allow:
+      - dependency-type: "direct"
+
+    # Group updates by category to reduce PR noise
+    groups:
+      build:
+        patterns:
+          - "typescript"
+          - "terser"
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      quality:
+        patterns:
+          - "@biomejs/*"
+          - "knip"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Ignore packages that require manual review for major updates
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "terser"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ──────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "ci(deps)"
+    labels:
+      - "ci"
+      - "dependencies"
+      - "automated"
+    groups:
+      actions:
+        patterns:
+          - "*"
+    # pnpm/action-setup@v6 has a known bug (pnpm/action-setup#225) that always
+    # installs pnpm v11 beta, ignoring the packageManager field. Skip major
+    # upgrades until the bug is resolved upstream.
+    ignore:
+      - dependency-name: "pnpm/action-setup"
+        update-types: ["version-update:semver-major"]
