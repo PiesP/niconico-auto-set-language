@@ -1,6 +1,6 @@
 # NicoNico Auto Set Language
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+**License:** MIT
 
 A UserScript that automatically sets the language to Japanese on NicoNico to ensure proper comment display and consistent browsing experience.
 
@@ -77,7 +77,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the standard development flow, PR c
 
 ## Why This Script Was Created
 
-This script was developed after discovering an issue where comments were not displayed on certain NicoNico videos. Investigation revealed that this issue was caused by language settings—only comments in the selected language are displayed. By ensuring the language is set to Japanese, this script resolves the issue and ensures a consistent viewing experience.
+This script was developed after discovering an issue where comments were not displayed on certain NicoNico videos. Investigation revealed that this issue was caused by language settings -- only comments in the selected language are displayed. By ensuring the language is set to Japanese, this script resolves the issue and ensures a consistent viewing experience.
 
 ## License
 

@@ -1,4 +1,4 @@
-# Testing Checklist – NicoNico Auto Set Language
+# Testing Checklist -- NicoNico Auto Set Language
 
 This checklist covers the userscript that forces NicoNico language settings to Japanese.
 

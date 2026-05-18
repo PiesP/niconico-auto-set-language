@@ -9,8 +9,6 @@ Thanks for improving **NicoNico Auto Set Language**. This repository ships a sma
 - Bugs / feature requests: GitHub Issues
 - Questions: open a GitHub issue with clear repro context
 
-This repository does not currently publish a separate security policy. Please avoid posting secrets, private account details, or session information in public issues.
-
 ## Before opening an issue
 
 Please include:
@@ -85,8 +83,8 @@ A good PR includes:
 
 ## Reference documents
 
-- [README.md](./README.md) — user-facing overview
-- [CODE_STANDARDS.md](./CODE_STANDARDS.md) — coding rules and repository constraints
-- [TESTING.md](./TESTING.md) — manual verification checklist
+- [README.md](./README.md) -- user-facing overview
+- [CODE_STANDARDS.md](./CODE_STANDARDS.md) -- coding rules and repository constraints
+- [TESTING.md](./TESTING.md) -- manual verification checklist
 
 Thanks for helping improve **NicoNico Auto Set Language**!
