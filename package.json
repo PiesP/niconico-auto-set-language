@@ -9,29 +9,22 @@
     "node": ">=24.0.0",
     "pnpm": ">=10.29.2"
   },
-  "volta": {
-    "node": "24.15.0",
-    "pnpm": "10.29.2"
-  },
   "scripts": {
     "clean": "rimraf dist",
     "build:ts": "tsc --project tsconfig.build.json",
-    "build:min": "terser dist/niconico-auto-set-language.user.js -o dist/niconico-auto-set-language.user.min.js -c directives=false -m --comments '/^\\s*==UserScript==|^\\s*@|^\\s*==\\/UserScript==/' --source-map",
+    "build:min": "terser dist/niconico-auto-set-language.user.js -o dist/niconico-auto-set-language.user.min.js -c directives=false -m --comments '/^\\\\s*==UserScript==|^\\\\s*@|^\\\\s*==\\\\/UserScript==/' --source-map",
     "build:dev": "pnpm run clean && pnpm run build:ts",
-    "build:fast": "pnpm run build:dev",
     "check": "tsc --noEmit --project tsconfig.build.json",
-    "typecheck": "pnpm -s check",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "fmt": "biome check --linter-enabled=false .",
     "fmt:fix": "biome check --write --linter-enabled=false .",
-    "fmt:check": "pnpm -s fmt",
     "knip": "knip --dependencies",
     "quality": "pnpm -s fmt && pnpm -s lint && pnpm -s check && pnpm -s knip",
     "quality:fix": "pnpm -s fmt:fix && pnpm -s lint:fix && pnpm -s check && pnpm -s knip",
     "quality:ci": "pnpm -s quality",
     "dev": "tsc --watch --project tsconfig.build.json",
-    "prebuild": "pnpm run quality:fix",
+    "prebuild": "pnpm run quality",
     "build": "pnpm run clean && pnpm run build:ts",
     "verify": "pnpm run build && pnpm run build:min"
   },
@@ -42,10 +35,5 @@
     "rimraf": "^6.1.3",
     "terser": "^5.47.1",
     "typescript": "^6.0.3"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }

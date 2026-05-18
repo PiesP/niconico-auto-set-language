@@ -2,17 +2,16 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A UserScript that automatically sets the language to Japanese on NicoNico website to ensure proper comment display and consistent browsing experience. This script fixes the issue where comments aren't properly displayed when using non-Japanese language settings.
+A UserScript that automatically sets the language to Japanese on NicoNico to ensure proper comment display and consistent browsing experience.
 
 ## Features
 
 - Automatically changes language to Japanese when browsing NicoNico
 - Ensures proper display of all comments on videos
-- Multiple detection methods for language UI elements to handle site updates
 - Visual notification when language setting is changed
 - Smart DOM observation for dynamically loaded content
-- Efficient performance with timeout to prevent excessive resource usage
-- Works across all NicoNico website domains
+- Toggle on/off via userscript menu command
+- Works across all NicoNico website domains (`*.nicovideo.jp`)
 
 ## Installation
 
@@ -22,20 +21,15 @@ A UserScript that automatically sets the language to Japanese on NicoNico websit
 
 ## Usage
 
-1. Navigate to any NicoNico page (\*.nicovideo.jp)
+1. Navigate to any NicoNico page (`*.nicovideo.jp`)
 2. The script automatically checks if the language is already set to Japanese
-3. If not, it will change the language setting for you
-4. A brief green notification appears when the language is changed (if enabled)
-5. The page will reload with proper Japanese language settings
+3. If not, it finds the language form and submits the Japanese value
+4. A brief notification appears when the language is changed
+5. The page reloads with Japanese language settings
 
-### Configuration
+### Toggle
 
-The script comes with default settings but can be customized by editing the `userSettings` object:
-
-- `enabled`: Turn the script on/off
-- `showNotification`: Display visual feedback when language is changed
-- `language`: Target language code (default: 'ja-jp')
-- `debug`: Enable detailed console logging for troubleshooting
+Use the userscript menu command **"Toggle Auto Set Language"** to enable or disable the script without uninstalling it.
 
 ## Browser Compatibility
 
@@ -50,33 +44,28 @@ Tested and compatible with:
 
 This project is developed with **pnpm + TypeScript**, and the built userscript files are generated in `dist/`.
 
-Prerequisites: Volta Node.js `24.15.0` (project default) or engines-compatible Node.js `>=24.0.0`, pnpm `>=10.29.2`
+Prerequisites: Node.js `>=24.0.0`, pnpm `>=10.29.2`
 
-### Main Scripts
+### Commands
 
 - `pnpm check`: TypeScript type check (no emit)
-- `pnpm typecheck`: Alias for `pnpm check`
 - `pnpm fmt`: Biome format check
 - `pnpm fmt:fix`: Biome format fix
-- `pnpm quality`: Format check + lint + type check (recommended for CI/PR)
-- `pnpm quality:fix`: Apply formatting/lint fixes, then rerun the same quality gate
+- `pnpm lint`: Biome lint
+- `pnpm lint:fix`: Biome lint fix
+- `pnpm quality`: Format check + lint + type check + unused dep scan
+- `pnpm quality:fix`: Apply formatting/lint fixes, then rerun quality gate
 - `pnpm build`: Clean + TypeScript build (generates the readable userscript in `dist/`)
-- `pnpm verify`: `pnpm build` + `pnpm build:min` (generates the minified release artifact)
 - `pnpm build:dev`: TS build only without minification
+- `pnpm verify`: `pnpm build` + `pnpm build:min` (generates the minified release artifact)
 - `pnpm dev`: TypeScript watch mode
 
 ### Workflow
 
 1. Modify `src/niconico-auto-set-language.user.ts`
 2. For quick checks during development, use `pnpm build:dev` or `pnpm dev`
-3. Before release, run `pnpm quality` and then `pnpm verify` (or `pnpm build` if you only need the readable userscript)
+3. Before release, run `pnpm quality` and then `pnpm verify`
 4. Update the `@version` in userscript metadata when releasing
-
-### Developer docs
-
-- Contributor workflow: [CONTRIBUTING.md](./CONTRIBUTING.md)
-- Coding policy: [CODE_STANDARDS.md](./CODE_STANDARDS.md)
-- Manual verification: [TESTING.md](./TESTING.md)
 
 ### Greasy Fork Upload Notice
 
@@ -87,15 +76,11 @@ Greasy Fork requires that published scripts be **non-minified/non-obfuscated (re
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the standard development flow, PR checklist, and project constraints.
-
-## Acknowledgements
-
-This project was developed in collaboration with AI.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development flow, PR checklist, and project constraints.
 
 ## Why This Script Was Created
 
-This script was developed after discovering an issue where comments were not displayed on certain NicoNico videos. Investigation revealed that this issue was caused by language settings—only comments in the selected language are displayed. By ensuring the language is set to Japanese, this script resolves the issue and ensures a consistent viewing experience.
+This script was developed after discovering an issue where comments were not displayed on certain NicoNico videos. Investigation revealed that this issue was caused by language settings — only comments in the selected language are displayed. By ensuring the language is set to Japanese, this script resolves the issue and ensures a consistent viewing experience.
 
 ## License
 

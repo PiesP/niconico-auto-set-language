@@ -124,13 +124,12 @@ jobs:
               if pat.search(text):
                 text = pat.sub(repl, text, count=1)
                 return
-              for anchor in ("@match", "@description", "@version"):
-                a = re.search(rf"^//\s*{re.escape(anchor)}.*$", text, re.MULTILINE)
-                if a:
-                  idx = a.end()
-                  text = text[:idx] + "\n" + repl + text[idx:]
-                  return
-              text = text.replace("// ==UserScript==", "// ==UserScript==\n" + repl, 1)
+              a = re.search(r"^//\s*@match\s+.*$", text, re.MULTILINE)
+              if a:
+                idx = a.end()
+                text = text[:idx] + "\n" + repl + text[idx:]
+                return
+              raise SystemExit(f"Cannot insert @{key}: no anchor found in metadata block")
 
             upsert("downloadURL")
             upsert("updateURL")

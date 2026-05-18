@@ -26,7 +26,7 @@ Please include:
 
 ### Prerequisites
 
-- Volta Node.js `24.15.0` (project default) or engines-compatible Node.js `>=24.0.0`
+- Node.js `>=24.0.0`
 - pnpm `>=10.29.2`
 
 ### Install
@@ -41,9 +41,10 @@ pnpm install
 pnpm build:dev
 pnpm dev
 pnpm check
-pnpm typecheck
 pnpm fmt
+pnpm fmt:fix
 pnpm lint
+pnpm lint:fix
 pnpm quality
 pnpm quality:fix
 pnpm build
@@ -72,7 +73,6 @@ pnpm verify
 - Prefer small, named helper functions over large nested blocks.
 - Use DOM APIs such as `textContent`; avoid `innerHTML`.
 - Keep logging behind the `[NicoNico Language]` prefix.
-- Follow [CODE_STANDARDS.md](./CODE_STANDARDS.md) for the detailed coding policy.
 
 ## Pull request expectations
 
@@ -85,7 +85,6 @@ A good PR includes:
 ## Reference documents
 
 - [README.md](./README.md) — user-facing overview
-- [CODE_STANDARDS.md](./CODE_STANDARDS.md) — coding rules and repository constraints
 - [TESTING.md](./TESTING.md) — manual verification checklist
 
 Thanks for helping improve **NicoNico Auto Set Language**!
