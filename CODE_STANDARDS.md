@@ -23,6 +23,7 @@ Consistency guide for **NicoNico Auto Set Language**.
 - Constants: `UPPER_SNAKE_CASE`
 - Group logic by responsibility: settings, notifications, DOM lookup, language switching, observers
 - Prefer short helper functions over deeply nested inline logic
+- Wrap the entire script in an IIFE arrow function to avoid polluting the global scope
 
 ## 4. TypeScript rules
 
@@ -30,6 +31,7 @@ Consistency guide for **NicoNico Auto Set Language**.
 - Prefer `unknown` + narrowing for storage/input values.
 - Use explicit types for settings objects, timers, and DOM query results.
 - Use `as const` for fixed maps such as toast colors.
+- Place `declare function` statements at the file top level, outside the IIFE.
 
 ## 5. Userscript and GM API conventions
 
@@ -44,6 +46,7 @@ Consistency guide for **NicoNico Auto Set Language**.
 - Avoid `eval`, `new Function`, or string-based timers.
 - Keep selectors resilient and fail safely if NicoNico changes its DOM.
 - Prefer `MutationObserver` + timeout/debounce patterns over aggressive polling.
+- Use `form.requestSubmit()` instead of `form.submit()` to dispatch submit events properly.
 
 ## 7. Logging and notifications
 
@@ -63,8 +66,6 @@ pnpm verify
 Helpful focused checks:
 
 ```bash
-pnpm build:dev
-pnpm dev
 pnpm check
 pnpm fmt
 pnpm lint
