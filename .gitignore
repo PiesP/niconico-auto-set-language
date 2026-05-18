@@ -29,3 +29,5 @@ logs/
 
 # Package artifacts
 *.tgz
+.editorconfig
+AGENTS.md
