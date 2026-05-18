@@ -5,7 +5,7 @@ name: 🤖 Dependabot Auto-Merge
 # - npm: patch/minor updates for specific safe packages
 # - Requires CI to pass first (via GitHub branch protection)
 #
-# Security: Uses pull_request trigger — no untrusted code checkout.
+# Security: Uses pull_request trigger -- no untrusted code checkout.
 
 on:
   pull_request:
@@ -46,9 +46,10 @@ jobs:
           SHOULD_MERGE="false"
           REASON="manual review required"
 
-          if [[ -n "$ALERT_STATE" ]]; then
+          # Only auto-merge security advisories that are actively flagged
+          if [[ "$ALERT_STATE" == "open" ]]; then
             SHOULD_MERGE="true"
-            REASON="security advisory update"
+            REASON="open security advisory"
           elif [[ "$ECOSYSTEM" == "github-actions" && ("$UPDATE_TYPE" == "version-update:semver-patch" || "$UPDATE_TYPE" == "version-update:semver-minor") ]]; then
             SHOULD_MERGE="true"
             REASON="safe github-actions patch/minor"

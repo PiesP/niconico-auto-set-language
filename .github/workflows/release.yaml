@@ -107,37 +107,30 @@ jobs:
           import re
           from pathlib import Path
 
-          def main() -> None:
-            repo = os.environ.get("GITHUB_REPOSITORY", "")
-            if not repo:
-              raise SystemExit("GITHUB_REPOSITORY is missing")
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          if not repo:
+            raise SystemExit("GITHUB_REPOSITORY is missing")
 
-            url = f"https://github.com/{repo}/releases/latest/download/niconico-auto-set-language.user.js"
+          url = f"https://github.com/{repo}/releases/latest/download/niconico-auto-set-language.user.js"
+          p = Path("dist/niconico-auto-set-language.user.js")
+          text = p.read_text(encoding="utf-8")
 
-            p = Path("dist/niconico-auto-set-language.user.js")
-            text = p.read_text(encoding="utf-8")
-
-            def upsert(key: str) -> None:
-              nonlocal text
+          for key in ("downloadURL", "updateURL"):
               pat = re.compile(rf"^//\s*@{re.escape(key)}\s+.*$", re.MULTILINE)
               repl = f"// @{key}  {url}"
               if pat.search(text):
-                text = pat.sub(repl, text, count=1)
-                return
-              for anchor in ("@match", "@description", "@version"):
-                a = re.search(rf"^//\s*{re.escape(anchor)}.*$", text, re.MULTILINE)
-                if a:
-                  idx = a.end()
-                  text = text[:idx] + "\n" + repl + text[idx:]
-                  return
-              text = text.replace("// ==UserScript==", "// ==UserScript==\n" + repl, 1)
+                  text = pat.sub(repl, text, count=1)
+              else:
+                  # Insert after @version line
+                  m = re.search(r"^//\s*@version\s+.*$", text, re.MULTILINE)
+                  if m:
+                      idx = m.end()
+                      text = text[:idx] + "\n" + repl + text[idx:]
+                  else:
+                      raise SystemExit(f"Cannot find @version anchor for inserting @{key}")
 
-            upsert("downloadURL")
-            upsert("updateURL")
-            p.write_text(text, encoding="utf-8")
-            print("Synced @downloadURL/@updateURL ->", url)
-
-          main()
+          p.write_text(text, encoding="utf-8")
+          print("Synced @downloadURL/@updateURL ->", url)
           PY
 
       - name: 🗜️ Build minified userscript
