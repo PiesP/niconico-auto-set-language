@@ -3,7 +3,6 @@ node_modules/
 
 # Build
 dist/
-build/
 
 # TypeScript
 *.tsbuildinfo
@@ -18,8 +17,6 @@ build/
 # OS
 .DS_Store
 Thumbs.db
-*:Zone.Identifier
-desktop.ini
 
 # Logs
 logs/
@@ -30,18 +27,5 @@ logs/
 .env.local
 .env.*.local
 
-# AI Instructions (not shared to remote)
-AGENTS.md
-.claude/
-.github/copilot-instructions.md
-.github/prompts/
-.editorconfig
-
-# Cache
-.npm
-.eslintcache
-.node_repl_history
-
 # Package artifacts
 *.tgz
-.yarn-integrity
