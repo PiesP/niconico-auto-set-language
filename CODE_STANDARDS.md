@@ -30,8 +30,9 @@ Consistency guide for **NicoNico Auto Set Language**.
 - Keep TypeScript strict and avoid `any`.
 - Prefer `unknown` + narrowing for storage/input values.
 - Use explicit types for settings objects, timers, and DOM query results.
-- Use `as const` for fixed maps such as toast colors.
+- Use `as const` for fixed maps or `enum` for enumerated types.
 - Place `declare function` statements at the file top level, outside the IIFE.
+- Do not use `const enum` — incompatible with `isolatedModules`.
 
 ## 5. Userscript and GM API conventions
 

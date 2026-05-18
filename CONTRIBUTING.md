@@ -36,8 +36,6 @@ pnpm install
 ### Common commands
 
 ```bash
-pnpm build:dev
-pnpm dev
 pnpm check
 pnpm fmt
 pnpm fmt:fix
@@ -52,11 +50,10 @@ pnpm verify
 ## Recommended development flow
 
 1. Make a focused change in `src/niconico-auto-set-language.user.ts`.
-2. Use `pnpm build:dev` or `pnpm dev` for quick iteration.
-3. Run `pnpm quality`; use `pnpm quality:fix` first if you want repository-standard fixes applied.
-4. Run `pnpm verify` before opening a PR.
-5. Follow the manual checks in [TESTING.md](./TESTING.md) when runtime behavior changed.
-6. Update `README.md` if user-visible behavior, install flow, or release expectations changed.
+2. Run `pnpm quality`; use `pnpm quality:fix` first if you want repository-standard fixes applied.
+3. Run `pnpm verify` before opening a PR.
+4. Follow the manual checks in [TESTING.md](./TESTING.md) when runtime behavior changed.
+5. Update `README.md` if user-visible behavior, install flow, or release expectations changed.
 
 ## Project constraints
 

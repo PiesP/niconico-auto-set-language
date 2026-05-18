@@ -21,7 +21,7 @@ A UserScript that automatically sets the language to Japanese on NicoNico to ens
 
 ## Usage
 
-1. Navigate to any NicoNico page (\*.nicovideo.jp)
+1. Navigate to any NicoNico page (nicovideo.jp)
 2. The script automatically checks if the language is already set to Japanese
 3. If not, it finds the language preference form and submits Japanese
 4. A brief notification appears when the language is changed (if enabled)
@@ -44,19 +44,16 @@ Prerequisites: Node.js `>=24.0.0`, pnpm `>=10.29.2`
 - `pnpm fmt:fix`: Biome format fix
 - `pnpm lint`: Biome lint
 - `pnpm lint:fix`: Biome lint fix
-- `pnpm quality`: Format check + lint + type check + unused dep scan
+- `pnpm quality`: Format check + lint + type check
 - `pnpm quality:fix`: Apply formatting/lint fixes, then rerun quality gate
 - `pnpm build`: Clean + TypeScript build (generates the readable userscript in `dist/`)
-- `pnpm build:dev`: TS build only without minification
 - `pnpm verify`: `pnpm build` + `pnpm build:min` (generates the minified release artifact)
-- `pnpm dev`: TypeScript watch mode
 
 ### Workflow
 
 1. Modify `src/niconico-auto-set-language.user.ts`
-2. For quick checks during development, use `pnpm build:dev` or `pnpm dev`
-3. Before release, run `pnpm quality` and then `pnpm verify`
-4. Update the `@version` in userscript metadata when releasing
+2. Before release, run `pnpm quality` and then `pnpm verify`
+3. Update the `@version` in userscript metadata when releasing
 
 ### Developer docs
 
