@@ -7,7 +7,7 @@
     "defaultBranch": "master"
   },
   "files": {
-    "includes": ["src/**"],
+    "includes": ["src/**", "scripts/**"],
     "ignoreUnknown": true
   },
   "formatter": {
@@ -26,20 +26,13 @@
         "noUnusedVariables": "warn"
       },
       "style": {
-        "noNonNullAssertion": "off",
+        "noNonNullAssertion": "error",
         "useConst": "error",
-        "noParameterAssign": "warn"
+        "noParameterAssign": "error"
       },
       "suspicious": {
         "noExplicitAny": "error",
-        "noConfusingVoidType": "off",
-        "noControlCharactersInRegex": "off",
-        "noDocumentCookie": "off",
         "noImplicitAnyLet": "error"
-      },
-      "complexity": {
-        "noForEach": "off",
-        "noStaticOnlyClass": "off"
       },
       "performance": {
         "noAccumulatingSpread": "warn"

@@ -1,5 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip/schema.json",
-  "entry": ["src/**/*.ts", "scripts/**/*.mjs"],
+  "entry": ["src/**/*.ts"],
   "project": ["src/**/*.ts", "scripts/**/*.mjs"]
 }
