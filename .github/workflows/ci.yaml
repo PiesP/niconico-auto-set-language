@@ -64,8 +64,6 @@ jobs:
       - name: 🧪 Verify UserScript metadata
         run: |
           set -euo pipefail
-          sed -i '1d' dist/niconico-auto-set-language.user.js
-
           if ! head -n 1 dist/niconico-auto-set-language.user.js | grep -q "// ==UserScript=="; then
             echo "Error: UserScript metadata is missing from the build output"
             exit 1
