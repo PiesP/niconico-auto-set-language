@@ -36,7 +36,7 @@
     "verify": "pnpm run build && pnpm run build:min"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
+    "@biomejs/biome": "^2.4.15",
     "@types/tampermonkey": "^5.0.5",
     "knip": "^6.12.2",
     "rimraf": "^6.1.3",
