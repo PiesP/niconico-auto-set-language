@@ -26,7 +26,7 @@ Please include:
 
 ### Prerequisites
 
-- Volta Node.js `24.15.0` (project default) or engines-compatible Node.js `>=24.0.0`
+- Node.js `>=24.0.0`
 - pnpm `>=10.29.2`
 
 ### Install
@@ -41,9 +41,10 @@ pnpm install
 pnpm build:dev
 pnpm dev
 pnpm check
-pnpm typecheck
 pnpm fmt
+pnpm fmt:fix
 pnpm lint
+pnpm lint:fix
 pnpm quality
 pnpm quality:fix
 pnpm build

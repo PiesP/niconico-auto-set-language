@@ -43,6 +43,7 @@ updates:
         patterns:
           - "@biomejs/*"
           - "knip"
+          - "rimraf"
         update-types:
           - "minor"
           - "patch"
