@@ -10,45 +10,38 @@
 // @grant        GM_registerMenuCommand
 // ==/UserScript==
 
-// Tampermonkey/Violentmonkey legacy sync APIs
 declare function GM_getValue<T>(key: string, defaultValue: T): T;
 declare function GM_setValue<T>(key: string, value: T): void;
 declare function GM_registerMenuCommand(name: string, callback: () => void): void;
 
 (() => {
+  const STORAGE_KEY = 'settings';
+  const TARGET_LANGUAGE = 'ja-jp';
+  const OBSERVE_TIMEOUT_MS = 5000;
+  const DEBOUNCE_MS = 100;
+  const TOAST_DURATION_MS = 2500;
+
   type Settings = {
     enabled: boolean;
     showNotification: boolean;
-    language: string;
     debug: boolean;
   };
-
-  const STORAGE_KEY = 'settings';
 
   const DEFAULT_SETTINGS: Settings = {
     enabled: true,
     showNotification: true,
-    language: 'ja-jp',
     debug: false,
   };
 
-  const OBSERVE_TIMEOUT_MS = 5000;
-  const CHECK_DEBOUNCE_MS = 100;
-  const TOAST_DURATION_MS = 2500;
-
-  const TOAST_BG = {
+  const TOAST_COLORS = {
     success: '#4CAF50',
     error: '#f44336',
     info: '#2196F3',
   } as const;
 
-  const TOAST_STYLE_BASE =
-    'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;' +
-    'z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;' +
-    'box-shadow:0 2px 10px rgba(0,0,0,.18)';
+  type ToastType = keyof typeof TOAST_COLORS;
 
-  let settings = loadSettings();
-
+  const settings = loadSettings();
   let observer: MutationObserver | null = null;
   let observeTimeout: number | null = null;
   let debounceTimer: number | null = null;
@@ -57,16 +50,10 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   function loadSettings(): Settings {
     const raw = GM_getValue<unknown>(STORAGE_KEY, {});
     const obj = typeof raw === 'object' && raw !== null ? (raw as Partial<Settings>) : {};
-
-    // Backward compat: older builds stored showNotification under the same key.
     return {
-      enabled: typeof obj.enabled === 'boolean' ? obj.enabled : DEFAULT_SETTINGS.enabled,
-      showNotification:
-        typeof obj.showNotification === 'boolean'
-          ? obj.showNotification
-          : DEFAULT_SETTINGS.showNotification,
-      language: typeof obj.language === 'string' ? obj.language : DEFAULT_SETTINGS.language,
-      debug: typeof obj.debug === 'boolean' ? obj.debug : DEFAULT_SETTINGS.debug,
+      enabled: obj.enabled ?? DEFAULT_SETTINGS.enabled,
+      showNotification: obj.showNotification ?? DEFAULT_SETTINGS.showNotification,
+      debug: obj.debug ?? DEFAULT_SETTINGS.debug,
     };
   }
 
@@ -75,20 +62,28 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   }
 
   function debugLog(message: string, ...args: unknown[]): void {
-    if (!settings.debug) return;
-    // console.debug is often filtered; keep it explicit.
-    console.log(`[NicoNico Language] ${message}`, ...args);
+    if (settings.debug) {
+      console.debug(`[NicoNico Language] ${message}`, ...args);
+    }
   }
 
-  type ToastType = keyof typeof TOAST_BG;
-
   function toast(message: string, type: ToastType = 'success'): void {
-    if (!settings.showNotification) return;
-    if (!document.body) return;
+    if (!settings.showNotification || !document.body) return;
 
     const el = document.createElement('div');
     el.textContent = message;
-    el.style.cssText = `${TOAST_STYLE_BASE};background:${TOAST_BG[type]}`;
+    el.style.cssText = [
+      'position: fixed',
+      'top: 10px',
+      'right: 10px',
+      'color: #fff',
+      'padding: 10px 12px',
+      'border-radius: 6px',
+      'z-index: 2147483647',
+      'font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif',
+      'box-shadow: 0 2px 10px rgba(0,0,0,.18)',
+      `background: ${TOAST_COLORS[type]}`,
+    ].join(';');
 
     document.body.appendChild(el);
     window.setTimeout(() => {
@@ -107,22 +102,17 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
       window.clearTimeout(observeTimeout);
       observeTimeout = null;
     }
-    if (observer) {
+    if (observer !== null) {
       observer.disconnect();
       observer = null;
     }
   }
 
-  function isAlreadyTargetLanguage(): boolean {
-    return document.documentElement.lang === settings.language;
-  }
-
   function findLanguageForm(): { form: HTMLFormElement; input: HTMLInputElement } | null {
-    // NicoNico's language preference is typically set via a form with an input[name="language"].
     const input = document.querySelector<HTMLInputElement>('form input[name="language"]');
     if (!input) return null;
 
-    const form = input.form ?? input.closest('form');
+    const form = input.closest('form');
     if (!(form instanceof HTMLFormElement)) return null;
 
     return { form, input };
@@ -132,8 +122,8 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     if (submitted) return true;
     if (!settings.enabled) return false;
 
-    if (isAlreadyTargetLanguage()) {
-      debugLog('Language already matches target.', settings.language);
+    if (document.documentElement.lang === TARGET_LANGUAGE) {
+      debugLog('Language already set to %s.', TARGET_LANGUAGE);
       return true;
     }
 
@@ -141,7 +131,7 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     if (!found) return false;
 
     try {
-      found.input.value = settings.language;
+      found.input.value = TARGET_LANGUAGE;
       toast('Changing language to Japanese...', 'info');
       submitted = true;
       stopWatching();
@@ -156,14 +146,16 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   }
 
   function watchForLanguageForm(): void {
-    if (observer) return;
+    if (observer !== null) return;
 
     observer = new MutationObserver(() => {
-      if (debounceTimer !== null) return;
+      if (debounceTimer !== null) {
+        window.clearTimeout(debounceTimer);
+      }
       debounceTimer = window.setTimeout(() => {
         debounceTimer = null;
         if (tryChangeLanguage()) stopWatching();
-      }, CHECK_DEBOUNCE_MS);
+      }, DEBOUNCE_MS);
     });
 
     observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -175,9 +167,6 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   }
 
   function run(): void {
-    settings = loadSettings();
-    submitted = false;
-
     if (tryChangeLanguage()) return;
     watchForLanguageForm();
   }
@@ -188,19 +177,18 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     run();
   }
 
-  if (typeof GM_registerMenuCommand === 'function') {
-    GM_registerMenuCommand('Toggle Auto Set Language', () => {
-      settings.enabled = !settings.enabled;
-      saveSettings();
-      toast(
-        `Script ${settings.enabled ? 'enabled' : 'disabled'}.`,
-        settings.enabled ? 'success' : 'info'
-      );
-      if (settings.enabled) {
-        run();
-      } else {
-        stopWatching();
-      }
-    });
-  }
+  GM_registerMenuCommand('Toggle Auto Set Language', () => {
+    settings.enabled = !settings.enabled;
+    saveSettings();
+    toast(
+      `Script ${settings.enabled ? 'enabled' : 'disabled'}.`,
+      settings.enabled ? 'success' : 'info'
+    );
+    if (settings.enabled) {
+      submitted = false;
+      run();
+    } else {
+      stopWatching();
+    }
+  });
 })();
