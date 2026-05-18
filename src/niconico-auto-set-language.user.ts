@@ -4,7 +4,8 @@
 // @version      0.9.1
 // @license      MIT
 // @description  Automatically set language to Japanese on NicoNico.
-// @match        *://*.nicovideo.jp/*
+// @match        *://www.nicovideo.jp/*
+// @match        *://nicovideo.jp/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
@@ -15,22 +16,18 @@ declare function GM_setValue<T>(key: string, value: T): void;
 declare function GM_registerMenuCommand(name: string, callback: () => void): void;
 
 (() => {
-  // --- Constants ---
   const STORAGE_KEY = 'settings';
   const TARGET_LANGUAGE = 'ja-jp';
   const OBSERVE_TIMEOUT_MS = 5000;
   const DEBOUNCE_MS = 100;
   const TOAST_DURATION_MS = 2500;
 
-  const TOAST_COLORS = {
-    info: '#2196F3',
-    success: '#4CAF50',
-    error: '#f44336',
-  } as const;
+  enum ToastType {
+    Info = '#2196F3',
+    Success = '#4CAF50',
+    Error = '#f44336',
+  }
 
-  type ToastColor = (typeof TOAST_COLORS)[keyof typeof TOAST_COLORS];
-
-  // --- Settings ---
   interface Settings {
     enabled: boolean;
     showNotification: boolean;
@@ -43,59 +40,57 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     debug: false,
   };
 
-  const settings: Settings = loadSettings();
+  let settings: Settings | null = null;
 
-  function loadSettings(): Settings {
-    const stored = GM_getValue<Partial<Settings>>(STORAGE_KEY, {});
-    return { ...DEFAULT_SETTINGS, ...stored };
+  function getSettings(): Settings {
+    if (settings === null) {
+      const stored = GM_getValue<Partial<Settings>>(STORAGE_KEY, {});
+      settings = { ...DEFAULT_SETTINGS, ...stored };
+    }
+    return settings;
   }
 
   function saveSettings(): void {
-    GM_setValue(STORAGE_KEY, settings);
+    GM_setValue(STORAGE_KEY, getSettings());
   }
 
-  // --- Logging ---
   function debugLog(message: string, ...args: unknown[]): void {
-    if (settings.debug) {
+    if (getSettings().debug) {
       console.debug(`[NicoNico Language] ${message}`, ...args);
     }
   }
 
-  // --- Toast ---
-  function showToast(message: string, color: ToastColor): void {
-    if (!settings.showNotification || !document.body) return;
+  function showToast(message: string, color: ToastType): void {
+    if (!getSettings().showNotification || !document.body) return;
 
     const el = document.createElement('div');
     el.textContent = message;
-    el.style.cssText =
-      'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;' +
-      'border-radius:6px;z-index:2147483647;' +
-      'font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;' +
-      `box-shadow:0 2px 10px rgba(0,0,0,.18);background:${color}`;
+    el.style.cssText = `position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:${color}`;
 
     document.body.appendChild(el);
 
     setTimeout(() => {
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
-      setTimeout(() => el.remove(), 300);
+      setTimeout(() => {
+        el.remove();
+      }, 300);
     }, TOAST_DURATION_MS);
   }
 
-  // --- State ---
   let submitted = false;
   let observer: MutationObserver | null = null;
-  let observeTimeout: ReturnType<typeof setTimeout> | null = null;
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let observeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let debounceTimerId: ReturnType<typeof setTimeout> | null = null;
 
   function clearTimers(): void {
-    if (debounceTimer !== null) {
-      clearTimeout(debounceTimer);
-      debounceTimer = null;
+    if (debounceTimerId !== null) {
+      clearTimeout(debounceTimerId);
+      debounceTimerId = null;
     }
-    if (observeTimeout !== null) {
-      clearTimeout(observeTimeout);
-      observeTimeout = null;
+    if (observeTimeoutId !== null) {
+      clearTimeout(observeTimeoutId);
+      observeTimeoutId = null;
     }
     if (observer !== null) {
       observer.disconnect();
@@ -103,15 +98,15 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     }
   }
 
-  // --- DOM helpers ---
   function findLanguageInput(): HTMLInputElement | null {
     return document.querySelector<HTMLInputElement>('form input[name="language"]');
   }
 
-  // --- Core logic ---
   function tryChangeLanguage(): boolean {
     if (submitted) return true;
-    if (!settings.enabled) return false;
+
+    const currentSettings = getSettings();
+    if (!currentSettings.enabled) return false;
 
     if (document.documentElement.lang === TARGET_LANGUAGE) {
       debugLog('Language already set to %s, skipping.', TARGET_LANGUAGE);
@@ -126,14 +121,14 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
 
     try {
       input.value = TARGET_LANGUAGE;
-      showToast('Changing language to Japanese...', TOAST_COLORS.info);
+      showToast('Changing language to Japanese...', ToastType.Info);
       submitted = true;
       clearTimers();
       form.requestSubmit();
       return true;
     } catch (err) {
       console.error('[NicoNico Language] Failed to submit language form:', err);
-      showToast('Failed to change language.', TOAST_COLORS.error);
+      showToast('Failed to change language.', ToastType.Error);
       clearTimers();
       return false;
     }
@@ -145,15 +140,17 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     debugLog('Language form not found yet, watching for DOM changes...');
 
     observer = new MutationObserver(() => {
-      clearTimeout(debounceTimer ?? undefined);
-      debounceTimer = setTimeout(() => {
+      if (debounceTimerId !== null) {
+        clearTimeout(debounceTimerId);
+      }
+      debounceTimerId = setTimeout(() => {
         if (tryChangeLanguage()) clearTimers();
       }, DEBOUNCE_MS);
     });
 
     observer.observe(document.documentElement, { childList: true, subtree: true });
 
-    observeTimeout = setTimeout(() => {
+    observeTimeoutId = setTimeout(() => {
       debugLog('Timed out waiting for language form (%d ms).', OBSERVE_TIMEOUT_MS);
       clearTimers();
     }, OBSERVE_TIMEOUT_MS);
@@ -163,25 +160,25 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     if (!tryChangeLanguage()) watchForLanguageForm();
   }
 
-  // --- Entry point ---
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run, { once: true });
   } else {
     run();
   }
 
-  // --- Menu command ---
   GM_registerMenuCommand('Toggle Auto Set Language', () => {
-    settings.enabled = !settings.enabled;
+    const s = getSettings();
+    s.enabled = !s.enabled;
     saveSettings();
 
-    if (settings.enabled) {
+    if (s.enabled) {
       submitted = false;
-      showToast('Auto Set Language enabled.', TOAST_COLORS.success);
+      clearTimers();
+      showToast('Auto Set Language enabled.', ToastType.Success);
       run();
     } else {
       clearTimers();
-      showToast('Auto Set Language disabled.', TOAST_COLORS.info);
+      showToast('Auto Set Language disabled.', ToastType.Info);
     }
   });
 })();
