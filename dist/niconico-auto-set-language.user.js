@@ -1,4 +1,3 @@
-"use strict";
 // ==UserScript==
 // @name         NicoNico Auto Set Language
 // @namespace    https://github.com/PiesP/niconico-auto-set-language
