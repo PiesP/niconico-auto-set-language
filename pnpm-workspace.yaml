@@ -15,3 +15,8 @@ allowBuilds:
 strictDepBuilds: true
 
 blockExoticSubdeps: true
+engineStrict: true
+lockfileVersion: 3
+autoInstallPeers: true
+strictPeerDependencies: false
+preferOffline: true
