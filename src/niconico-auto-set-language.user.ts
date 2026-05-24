@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NicoNico Auto Set Language
 // @namespace    https://github.com/PiesP/niconico-auto-set-language
-// @version      0.9.1
+// @version      0.10.0
 // @license      MIT
 // @description  Automatically set language to Japanese on NicoNico.
 // @match        *://*.nicovideo.jp/*

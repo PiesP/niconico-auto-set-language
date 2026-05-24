@@ -1,6 +1,6 @@
 {
   "name": "niconico-auto-set-language",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Automatically set language to Japanese on NicoNico",
   "type": "module",
   "private": true,
