@@ -2,6 +2,16 @@
   "name": "niconico-auto-set-language",
   "version": "0.10.0",
   "description": "Automatically set language to Japanese on NicoNico",
+  "license": "MIT",
+  "author": "PiesP",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PiesP/niconico-auto-set-language.git"
+  },
+  "homepage": "https://github.com/PiesP/niconico-auto-set-language#readme",
+  "bugs": {
+    "url": "https://github.com/PiesP/niconico-auto-set-language/issues"
+  },
   "type": "module",
   "private": true,
   "packageManager": "pnpm@11.2.2",
