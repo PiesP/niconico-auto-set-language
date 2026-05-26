@@ -70,14 +70,7 @@ jobs:
       - name: 🏗️ Build userscript
         run: pnpm build
 
-      - name: 🔧 Sync userscript @version to tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --experimental-strip-types scripts/update-userscript-meta.ts \
-            dist/niconico-auto-set-language.user.js "$RELEASE_VERSION"
-
-      - name: 🔗 Sync userscript updateURL/downloadURL
+      - name: 🔧 Sync userscript metadata (@version, @downloadURL, @updateURL)
         shell: bash
         run: |
           set -euo pipefail

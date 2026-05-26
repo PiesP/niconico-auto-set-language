@@ -57,27 +57,52 @@ jobs:
         run: pnpm verify
 
       - name: 🧪 Verify UserScript metadata
+        shell: bash
         run: |
           set -euo pipefail
-          if ! head -n 1 dist/niconico-auto-set-language.user.js | grep -q "// ==UserScript=="; then
-            echo "Error: UserScript metadata is missing from the build output"
+          FILE="dist/niconico-auto-set-language.user.js"
+          PKG_VERSION="$(node -e "process.stdout.write(require('./package.json').version)")"
+
+          # --- Structure: start + end tags ---
+          if ! head -n 1 "$FILE" | grep -qF "// ==UserScript=="; then
+            echo "::error::Missing // ==UserScript== opening tag"
             exit 1
           fi
-          if ! grep -q "^// @version" dist/niconico-auto-set-language.user.js; then
-            echo "Error: UserScript @version is missing from the build output"
+          if ! grep -qFx "// ==/UserScript==" "$FILE"; then
+            echo "::error::Missing // ==/UserScript== closing tag (must be on its own line, exact match)"
             exit 1
           fi
 
-          lines=$(wc -l < dist/niconico-auto-set-language.user.js)
+          # --- Required metadata fields ---
+          required_fields=("@name" "@namespace" "@version" "@description" "@license" "@match" "@grant")
+          for field in "${required_fields[@]}"; do
+            if ! grep -qE "^// ${field}\s" "$FILE"; then
+              echo "::error::Required UserScript field ${field} is missing"
+              exit 1
+            fi
+          done
+
+          # --- @version must match package.json ---
+          if ! grep -qE "^// @version\s+${PKG_VERSION}$" "$FILE"; then
+            echo "::error::@version does not match package.json version (expected '${PKG_VERSION}')"
+            grep -n "^// @version" "$FILE" || true
+            exit 1
+          fi
+
+          # --- Sanity: not minified ---
+          lines="$(wc -l < "$FILE")"
           if [ "$lines" -lt 50 ]; then
-            echo "Error: Build output looks minified (too few lines: $lines)"
+            echo "::error::Build output looks minified (${lines} lines; expected >= 50)"
             exit 1
           fi
 
-          if [ ! -f dist/niconico-auto-set-language.user.min.js ]; then
-            echo "Error: Minified build output is missing"
+          # --- Minified output must exist ---
+          if [ ! -f "dist/niconico-auto-set-language.user.min.js" ]; then
+            echo "::error::Minified build output (dist/niconico-auto-set-language.user.min.js) is missing"
             exit 1
           fi
+
+          echo "✅ UserScript metadata validated (version=${PKG_VERSION}, lines=${lines})"
 
       - name: 📊 Upload build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
