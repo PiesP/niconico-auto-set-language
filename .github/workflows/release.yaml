@@ -74,65 +74,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          version = os.environ["RELEASE_VERSION"]
-          p = Path("dist/niconico-auto-set-language.user.js")
-          text = p.read_text(encoding="utf-8")
-
-          pat = re.compile(r"^//\s*@version\s+.*$", re.MULTILINE)
-          repl = f"// @version      {version}"
-          new_text, n = pat.subn(repl, text, count=1)
-          if n != 1:
-            raise SystemExit(f"Expected to replace exactly 1 @version line, replaced {n}")
-
-          p.write_text(new_text, encoding="utf-8")
-          print(f"Synced @version -> {version}")
-          PY
+          node --experimental-strip-types scripts/update-userscript-meta.ts \
+            dist/niconico-auto-set-language.user.js "$RELEASE_VERSION"
 
       - name: 🔗 Sync userscript updateURL/downloadURL
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          def main() -> None:
-            repo = os.environ.get("GITHUB_REPOSITORY", "")
-            if not repo:
-              raise SystemExit("GITHUB_REPOSITORY is missing")
-
-            url = f"https://github.com/{repo}/releases/latest/download/niconico-auto-set-language.user.js"
-
-            p = Path("dist/niconico-auto-set-language.user.js")
-            text = p.read_text(encoding="utf-8")
-
-            def upsert(key: str) -> None:
-              nonlocal text
-              pat = re.compile(rf"^//\s*@{re.escape(key)}\s+.*$", re.MULTILINE)
-              repl = f"// @{key}  {url}"
-              if pat.search(text):
-                text = pat.sub(repl, text, count=1)
-                return
-              a = re.search(r"^//\s*@match\s+.*$", text, re.MULTILINE)
-              if a:
-                idx = a.end()
-                text = text[:idx] + "\n" + repl + text[idx:]
-                return
-              raise SystemExit(f"Cannot insert @{key}: no anchor found in metadata block")
-
-            upsert("downloadURL")
-            upsert("updateURL")
-            p.write_text(text, encoding="utf-8")
-            print("Synced @downloadURL/@updateURL ->", url)
-
-          main()
-          PY
+          node --experimental-strip-types scripts/update-userscript-meta.ts \
+            dist/niconico-auto-set-language.user.js "$RELEASE_VERSION"
 
       - name: 🗜️ Build minified userscript
         run: pnpm build:min
