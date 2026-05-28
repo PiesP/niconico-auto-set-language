@@ -11,7 +11,7 @@ roughly adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **Codebase rebuilt**: Complete refactoring for simplicity and consistency — reduced to single-file 140-line userscript with zero runtime dependencies.
-- **Infrastructure modernization**: Migrated to pnpm 11.2.2, Node.js 24.x, TypeScript 6.0.3, Biome 2.4.x, Terser 5.x.
+- **Infrastructure modernization**: Migrated to pnpm 11.2.2, Node.js 26.x, TypeScript 6.0.3, Biome 2.4.x, Terser 5.x.
 
 ### Added
 

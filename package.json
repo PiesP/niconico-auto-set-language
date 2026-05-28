@@ -16,7 +16,7 @@
   "private": true,
   "packageManager": "pnpm@11.2.2",
   "engines": {
-    "node": ">=24.0.0",
+    "node": ">=26.0.0",
     "pnpm": ">=11.2.2"
   },
   "scripts": {
@@ -50,7 +50,7 @@
     "typescript": "^6.0.3"
   },
   "volta": {
-    "node": "24.16.0",
+    "node": "26.2.0",
     "pnpm": "11.2.2"
   }
 }

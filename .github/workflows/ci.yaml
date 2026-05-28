@@ -19,8 +19,8 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: "24"
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NODE_VERSION: "26"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE26: "true"
 
 permissions:
   contents: read

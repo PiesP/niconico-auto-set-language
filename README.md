@@ -44,7 +44,7 @@ Tested and compatible with:
 
 This project is developed with **pnpm + TypeScript**, and the built userscript files are generated in `dist/`.
 
-Prerequisites: Node.js `>=24.0.0`, pnpm `>=10.29.2`
+Prerequisites: Node.js `>=26.0.0`, pnpm `>=10.29.2`
 
 ### Commands
 
