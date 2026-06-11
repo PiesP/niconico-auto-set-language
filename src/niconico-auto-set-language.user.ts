@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 PiesP
+// Copyright (c) 2024-2026 PiesP
 
 // ==UserScript==
 // @name         NicoNico Auto Set Language
