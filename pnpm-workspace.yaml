@@ -1,5 +1,9 @@
 minimumReleaseAge: 10080
 
+# Security-critical packages that bypass the 7-day cooling period:
+#   - minimatch: known supply-chain attack target (CVE-2022-3517)
+minimumReleaseAgeExclude:
+  - minimatch
 
 allowBuilds:
   - esbuild
@@ -8,8 +12,10 @@ allowBuilds:
 strictDepBuilds: true
 
 blockExoticSubdeps: true
+
+# Fail if the current Node.js / pnpm version doesn't match engines field.
 engineStrict: true
-lockfileVersion: 3
+
 autoInstallPeers: true
 strictPeerDependencies: false
 preferOffline: true
