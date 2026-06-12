@@ -42,6 +42,8 @@ docs/
 !CODE_OF_CONDUCT.md
 !CONTRIBUTING.md
 !SUPPORT.md
+!.github/SECURITY.md
+!.github/pull_request_template.md
 
 # AI Instructions (not shared to remote)
 AGENTS.md

@@ -1,0 +1,83 @@
+# Security Policy
+
+This document describes how security is handled for **NicoNico Auto Set Language** and how to responsibly report vulnerabilities.
+
+---
+
+## Supported Versions
+
+We only provide security support for the **latest released version** of the userscript on [GitHub Releases](https://github.com/PiesP/niconico-auto-set-language/releases).
+
+| Version | Supported          |
+| ------- | ------------------ |
+| Latest  | :white_check_mark: |
+| Older   | :x:                |
+
+Userscript managers (Tampermonkey, Violentmonkey, etc.) can auto-update the script; we recommend keeping auto-update enabled.
+
+---
+
+## Reporting a Vulnerability
+
+If you discover a security vulnerability, **do not** disclose it publicly.
+
+1. **Preferred**: Use [GitHub Security Advisories](https://github.com/PiesP/niconico-auto-set-language/security/advisories/new).
+2. If that is not available, open a minimal GitHub issue asking for a private channel **without** sharing technical details.
+
+Please include, where possible:
+
+- A short description and impact
+- Steps to reproduce
+- Browser, OS, and userscript manager versions
+- Script version (from the userscript header)
+
+We aim to respond within **7 business days** and coordinate disclosure once a fix is available.
+
+---
+
+## Security Model & Privacy
+
+**NicoNico Auto Set Language** is a client-side userscript that runs entirely in your browser on NicoNico.
+
+- All logic executes locally in the browser.
+- We do **not** collect, store, or transmit personal data.
+- The script makes no external network requests.
+- The script uses only `GM_registerMenuCommand` (no network, storage, or unsafe window access).
+- The script does not use `eval()` or similar dynamic code execution.
+- File permissions: single GM API (`GM_registerMenuCommand`), no cross-origin access.
+
+---
+
+## Development Security
+
+We use several mechanisms to keep the codebase secure:
+
+- **GitHub Security Suite** (`.github/workflows/security.yaml`)
+  - Dependency scanning with OSV Scanner (PR diff + scheduled full scans)
+  - Static analysis with Semgrep on PR, scheduled, and manual runs
+- **Dependabot** (`.github/dependabot.yaml`)
+  - Automated grouped updates for npm packages and GitHub Actions
+- **Quality**
+  - TypeScript strict mode, Biome linter/formatter
+
+These checks run in pull requests, the merge queue, and scheduled/manual workflows; local development uses the same toolchain via `pnpm` commands.
+
+---
+
+## Scope
+
+In scope for this policy:
+
+- Vulnerabilities in this userscript (XSS, injection, logic flaws, privacy leaks)
+- Vulnerabilities introduced by this repository's dependencies
+
+Out of scope:
+
+- Issues in NicoNico itself
+- Bugs in userscript managers (Tampermonkey, Violentmonkey, etc.)
+
+---
+
+## License
+
+This project is licensed under the [MIT License](../LICENSE).
