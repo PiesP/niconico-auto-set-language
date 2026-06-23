@@ -108,7 +108,7 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
       if (debounceTimer !== null) return;
       debounceTimer = window.setTimeout(() => {
         debounceTimer = null;
-        if (tryChangeLanguage()) stopWatching();
+        tryChangeLanguage();
       }, CHECK_DEBOUNCE_MS);
     });
 
