@@ -19,13 +19,14 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   const CHECK_DEBOUNCE_MS = 100;
   const TOAST_DURATION_MS = 2500;
 
-  const TOAST_BG = {
-    success: '#4CAF50',
-    error: '#f44336',
-    info: '#2196F3',
-  } as const;
+  const TOAST_BASE_STYLE =
+    'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
 
-  type ToastType = keyof typeof TOAST_BG;
+  function toastBg(type: 'success' | 'error' | 'info'): string {
+    if (type === 'error') return '#f44336';
+    if (type === 'info') return '#2196F3';
+    return '#4CAF50';
+  }
 
   let enabled = true;
   let submitted = false;
@@ -33,16 +34,12 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   let observeTimeout: number | null = null;
   let debounceTimer: number | null = null;
 
-  function toast(message: string, type: ToastType = 'success'): void {
+  function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     if (!document.body) return;
 
     const el = document.createElement('div');
     el.textContent = message;
-    el.style.cssText =
-      'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;' +
-      'border-radius:6px;z-index:2147483647;' +
-      'font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;' +
-      `box-shadow:0 2px 10px rgba(0,0,0,.18);background:${TOAST_BG[type]}`;
+    el.style.cssText = TOAST_BASE_STYLE + toastBg(type);
 
     document.body.appendChild(el);
     window.setTimeout(() => {
