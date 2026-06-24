@@ -7,7 +7,8 @@
 // @version      0.10.0
 // @license      MIT
 // @description  Automatically set language to Japanese on NicoNico.
-// @match        *://*.nicovideo.jp/*
+// @match        https://www.nicovideo.jp/*
+// @match        https://nicovideo.jp/*
 // @grant        GM_registerMenuCommand
 // ==/UserScript==
 
@@ -78,8 +79,6 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     if (submitted) return true;
     if (!enabled) return false;
 
-    if (document.documentElement.lang === TARGET_LANGUAGE) return true;
-
     const found = findLanguageForm();
     if (!found) return false;
 
@@ -118,6 +117,7 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
 
   function run(): void {
     submitted = false;
+    stopWatching(); // Always clean up previous observer before starting fresh
     if (tryChangeLanguage()) return;
     watchForLanguageForm();
   }
