@@ -34,6 +34,14 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   let observer: MutationObserver | null = null;
   let observeTimeout: number | null = null;
   let debounceTimer: number | null = null;
+  const activeToastTimers: number[] = [];
+
+  function clearToastTimers(): void {
+    for (const id of activeToastTimers) {
+      window.clearTimeout(id);
+    }
+    activeToastTimers.length = 0;
+  }
 
   function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     if (!document.body) return;
@@ -43,11 +51,13 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     el.style.cssText = TOAST_BASE_STYLE + toastBg(type);
 
     document.body.appendChild(el);
-    window.setTimeout(() => {
+    const fadeTimer = window.setTimeout(() => {
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
-      window.setTimeout(() => el.remove(), 300);
+      const removeTimer = window.setTimeout(() => el.remove(), 300);
+      activeToastTimers.push(removeTimer);
     }, TOAST_DURATION_MS);
+    activeToastTimers.push(fadeTimer);
   }
 
   function stopWatching(): void {
@@ -63,6 +73,7 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
       observer.disconnect();
       observer = null;
     }
+    clearToastTimers();
   }
 
   function findLanguageForm(): { form: HTMLFormElement; input: HTMLInputElement } | null {
@@ -85,9 +96,9 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     try {
       found.input.value = TARGET_LANGUAGE;
       toast('Changing language to Japanese...', 'info');
-      submitted = true;
       stopWatching();
       found.form.submit();
+      submitted = true;
       return true;
     } catch (err) {
       console.error('[NicoNico Language] Failed to submit language form:', err);
@@ -128,13 +139,19 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     run();
   }
 
-  GM_registerMenuCommand('Toggle Auto Set Language', () => {
-    enabled = !enabled;
-    toast(`Script ${enabled ? 'enabled' : 'disabled'}.`, enabled ? 'success' : 'info');
-    if (enabled) {
-      run();
-    } else {
-      stopWatching();
-    }
+  if (typeof GM_registerMenuCommand === 'function') {
+    GM_registerMenuCommand('Toggle Auto Set Language', () => {
+      enabled = !enabled;
+      toast(`Script ${enabled ? 'enabled' : 'disabled'}.`, enabled ? 'success' : 'info');
+      if (enabled) {
+        run();
+      } else {
+        stopWatching();
+      }
+    });
+  }
+
+  window.addEventListener('beforeunload', () => {
+    clearToastTimers();
   });
 })();
