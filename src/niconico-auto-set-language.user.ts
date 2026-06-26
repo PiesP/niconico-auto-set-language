@@ -34,13 +34,14 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   let observer: MutationObserver | null = null;
   let observeTimeout: number | null = null;
   let debounceTimer: number | null = null;
-  const activeToastTimers: number[] = [];
+  const activeToasts: { el: HTMLDivElement; timers: number[] }[] = [];
 
-  function clearToastTimers(): void {
-    for (const id of activeToastTimers) {
-      window.clearTimeout(id);
+  function clearAllToasts(): void {
+    for (const { el, timers } of activeToasts) {
+      for (const id of timers) window.clearTimeout(id);
+      el.remove();
     }
-    activeToastTimers.length = 0;
+    activeToasts.length = 0;
   }
 
   function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
@@ -51,13 +52,19 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     el.style.cssText = TOAST_BASE_STYLE + toastBg(type);
 
     document.body.appendChild(el);
+    const timers: number[] = [];
     const fadeTimer = window.setTimeout(() => {
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
-      const removeTimer = window.setTimeout(() => el.remove(), 300);
-      activeToastTimers.push(removeTimer);
+      const removeTimer = window.setTimeout(() => {
+        el.remove();
+        const idx = activeToasts.findIndex((t) => t.el === el);
+        if (idx !== -1) activeToasts.splice(idx, 1);
+      }, 300);
+      timers.push(removeTimer);
     }, TOAST_DURATION_MS);
-    activeToastTimers.push(fadeTimer);
+    timers.push(fadeTimer);
+    activeToasts.push({ el, timers });
   }
 
   function stopWatching(): void {
@@ -73,7 +80,7 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
       observer.disconnect();
       observer = null;
     }
-    clearToastTimers();
+    clearAllToasts();
   }
 
   function findLanguageForm(): { form: HTMLFormElement; input: HTMLInputElement } | null {
@@ -152,6 +159,6 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   }
 
   window.addEventListener('beforeunload', () => {
-    clearToastTimers();
+    clearAllToasts();
   });
 })();
