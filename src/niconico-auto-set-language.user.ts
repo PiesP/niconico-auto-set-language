@@ -24,17 +24,20 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
 
   function toastBg(type: 'success' | 'error' | 'info'): string {
-    if (type === 'error') return '#f44336';
-    if (type === 'info') return '#2196F3';
-    return '#4CAF50';
+    const map: Record<'success' | 'error' | 'info', string> = {
+      error: '#f44336',
+      info: '#2196F3',
+      success: '#4CAF50',
+    };
+    return map[type];
   }
 
   let enabled = true;
   let submitted = false;
   let observer: MutationObserver | null = null;
-  let observeTimeout: number | null = null;
-  let debounceTimer: number | null = null;
-  const activeToasts: { el: HTMLDivElement; timers: number[] }[] = [];
+  let observeTimeout: ReturnType<typeof window.setTimeout> | null = null;
+  let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
+  const activeToasts: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] }[] = [];
 
   function clearAllToasts(): void {
     for (const { el, timers } of activeToasts) {
@@ -52,7 +55,7 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
     el.style.cssText = TOAST_BASE_STYLE + toastBg(type);
 
     document.body.appendChild(el);
-    const timers: number[] = [];
+    const timers: ReturnType<typeof window.setTimeout>[] = [];
     const fadeTimer = window.setTimeout(() => {
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
@@ -159,6 +162,6 @@ declare function GM_registerMenuCommand(name: string, callback: () => void): voi
   }
 
   window.addEventListener('beforeunload', () => {
-    clearAllToasts();
+    stopWatching();
   });
 })();
