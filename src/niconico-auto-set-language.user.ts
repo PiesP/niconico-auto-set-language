@@ -12,13 +12,11 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
-// @grant        GM_addStyle
 // ==/UserScript==
 
 declare function GM_registerMenuCommand(name: string, callback: () => void): void;
 declare function GM_setValue(name: string, value: unknown): void;
 declare function GM_getValue<T>(name: string, defaultValue: T): T;
-declare function GM_addStyle(css: string): void;
 
 (() => {
   const TARGET_LANGUAGE = 'ja-jp';
