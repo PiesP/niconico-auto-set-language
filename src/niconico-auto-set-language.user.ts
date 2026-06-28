@@ -202,7 +202,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   const navObserver = new MutationObserver(() => {
     checkNavigation();
   });
-  navObserver.observe(document.documentElement, { childList: true, subtree: false });
+  navObserver.observe(document.documentElement, { childList: true, subtree: true });
 
   // Initial run
   if (document.readyState === 'loading') {
