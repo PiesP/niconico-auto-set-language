@@ -25,6 +25,11 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   const TOAST_DURATION_MS = 2500;
   const STORAGE_KEY_ENABLED = 'nicoauto-enabled';
 
+  // Centralized DOM selectors — update these if NicoNico changes its markup.
+  const SELECTOR_LANGUAGE_INPUT = 'form input[name="language"]';
+  const SELECTOR_WATCH_PAGE_CONTAINER = '#watch-page-container';
+  const SELECTOR_WATCH_CONTAINER = '.watch-container';
+
   const TOAST_BASE_STYLE =
     'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
 
@@ -39,10 +44,12 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
   // SSOT: GM storage is the single source of truth for enabled state
   function isEnabled(): boolean {
+    if (typeof GM_getValue !== 'function') return true;
     return GM_getValue<boolean>(STORAGE_KEY_ENABLED, true);
   }
 
   function setEnabled(value: boolean): void {
+    if (typeof GM_setValue !== 'function') return;
     GM_setValue(STORAGE_KEY_ENABLED, value);
   }
 
@@ -50,6 +57,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   let observer: MutationObserver | null = null;
   let observeTimeout: ReturnType<typeof window.setTimeout> | null = null;
   let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
+  let navObserver: MutationObserver | null = null;
   const activeToasts: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] }[] = [];
 
   function clearAllToasts(): void {
@@ -71,13 +79,15 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
     document.body.appendChild(el);
     const timers: ReturnType<typeof window.setTimeout>[] = [];
+    const entryIndex = activeToasts.length;
     const fadeTimer = window.setTimeout(() => {
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
       const removeTimer = window.setTimeout(() => {
         el.remove();
-        const idx = activeToasts.findIndex((t) => t.el === el);
-        if (idx !== -1) activeToasts.splice(idx, 1);
+        if (activeToasts[entryIndex]?.el === el) {
+          activeToasts.splice(entryIndex, 1);
+        }
       }, 300);
       timers.push(removeTimer);
     }, TOAST_DURATION_MS);
@@ -98,17 +108,36 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       observer.disconnect();
       observer = null;
     }
+    if (navObserver !== null) {
+      navObserver.disconnect();
+    }
     clearAllToasts();
   }
 
+  /**
+   * Locate the language form. Try multiple selector strategies to stay
+   * resilient against minor DOM restructuring on NicoNico's side.
+   */
   function findLanguageForm(): { form: HTMLFormElement; input: HTMLInputElement } | null {
-    const input = document.querySelector<HTMLInputElement>('form input[name="language"]');
-    if (!input) return null;
+    // Strategy 1: input with name="language" inside a form (original approach)
+    const input = document.querySelector<HTMLInputElement>(SELECTOR_LANGUAGE_INPUT);
+    if (input) {
+      const form = input.form ?? input.closest('form');
+      if (form instanceof HTMLFormElement) return { form, input };
+    }
 
-    const form = input.form ?? input.closest('form');
-    if (!(form instanceof HTMLFormElement)) return null;
+    // Strategy 2: any form that has a select or input with "language" in the name
+    const fallbackInput = document.querySelector<HTMLInputElement | HTMLSelectElement>(
+      'select[name="language"],input[name="lang"],[data-testid="language-select"]'
+    );
+    if (fallbackInput) {
+      const form = fallbackInput.closest('form');
+      if (form instanceof HTMLFormElement && fallbackInput instanceof HTMLInputElement) {
+        return { form, input: fallbackInput };
+      }
+    }
 
-    return { form, input };
+    return null;
   }
 
   function tryChangeLanguage(): boolean {
@@ -142,20 +171,25 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     if (observer !== null) return;
 
     // Scope the observer to the video player container if available,
-    // falling back to documentElement only when necessary.
+    // falling back to document.body only when necessary.
+    // Never use documentElement to avoid observing all DOM changes.
     const targetNode =
-      document.querySelector('#watch-page-container') ??
-      document.querySelector('.watch-container') ??
-      document.documentElement;
+      document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
+      document.querySelector(SELECTOR_WATCH_CONTAINER) ??
+      document.body;
+
+    if (!targetNode) return;
 
     observer = new MutationObserver((mutations) => {
+      // Bail out if we were disconnected while mutations were in-flight.
+      if (observer === null) return;
+
       // Early return: skip mutations clearly unrelated to the language form
       if (mutations.length > 0) {
         const relevant = mutations.some((m) => {
           if (m.type === 'childList') return true;
           return (
-            m.target instanceof HTMLElement &&
-            m.target.closest('form input[name="language"]') !== null
+            m.target instanceof HTMLElement && m.target.closest(SELECTOR_LANGUAGE_INPUT) !== null
           );
         });
         if (!relevant) return;
@@ -171,13 +205,18 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     observer.observe(targetNode, { childList: true, subtree: true });
 
     observeTimeout = window.setTimeout(() => {
-      stopWatching();
+      // Guard: stopWatching() may have already been called by tryChangeLanguage
+      // or the timeout itself being cleared — only proceed if we still have an observer.
+      if (observer !== null) {
+        stopWatching();
+      }
     }, OBSERVE_TIMEOUT_MS);
   }
 
   function run(): void {
     submitted = false;
-    stopWatching(); // Always clean up previous observer before starting fresh
+    // stopWatching() is idempotent — safe to call whether or not we have an observer.
+    stopWatching();
     if (tryChangeLanguage()) return;
     watchForLanguageForm();
   }
@@ -198,11 +237,8 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   // Listen to yt-navigate-end (Niconico SPA navigation event)
   window.addEventListener('yt-navigate-end', checkNavigation);
 
-  // Also observe the body for SPA content replacement
-  const navObserver = new MutationObserver(() => {
-    checkNavigation();
-  });
-  navObserver.observe(document.documentElement, { childList: true, subtree: true });
+  // Also observe for SPA content replacement (narrow scope to body)
+  startNavObserver();
 
   // Initial run
   if (document.readyState === 'loading') {
@@ -217,6 +253,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       setEnabled(newValue);
       toast(`Script ${newValue ? 'enabled' : 'disabled'}.`, newValue ? 'success' : 'info');
       if (newValue) {
+        startNavObserver();
         run();
       } else {
         stopWatching();
@@ -226,6 +263,25 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
   window.addEventListener('beforeunload', () => {
     stopWatching();
-    navObserver.disconnect();
   });
+
+  function startNavObserver(): void {
+    if (navObserver !== null) return;
+    navObserver = new MutationObserver(() => {
+      checkNavigation();
+    });
+    if (document.body) {
+      navObserver.observe(document.body, { childList: true, subtree: true });
+    } else {
+      document.addEventListener(
+        'DOMContentLoaded',
+        () => {
+          if (navObserver && document.body) {
+            navObserver.observe(document.body, { childList: true, subtree: true });
+          }
+        },
+        { once: true }
+      );
+    }
+  }
 })();
