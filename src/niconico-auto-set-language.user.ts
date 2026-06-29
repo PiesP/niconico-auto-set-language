@@ -224,12 +224,17 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
   // SPA navigation detection: re-run on URL changes
   let lastLocation = window.location.href;
+  let navDebounceTimer: ReturnType<typeof window.setTimeout> | null = null;
 
   function checkNavigation(): void {
-    if (window.location.href !== lastLocation) {
-      lastLocation = window.location.href;
-      run();
-    }
+    if (navDebounceTimer !== null) return;
+    navDebounceTimer = window.setTimeout(() => {
+      navDebounceTimer = null;
+      if (window.location.href !== lastLocation) {
+        lastLocation = window.location.href;
+        run();
+      }
+    }, CHECK_DEBOUNCE_MS);
   }
 
   // Listen to popstate (back/forward navigation)
