@@ -68,22 +68,20 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   let navObserver: MutationObserver | null = null;
   const activeToasts: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] }[] = [];
 
-  function clearAllToasts(): void {
-    for (const { el, timers } of activeToasts) {
-      for (const id of timers) window.clearTimeout(id);
-      el.remove();
-    }
-    activeToasts.length = 0;
-  }
-
   function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     if (!document.body) return;
 
     const el = document.createElement('div');
     el.textContent = message;
     el.style.cssText = TOAST_BASE_STYLE + toastBg(type);
-    el.setAttribute('role', 'status');
-    el.setAttribute('aria-live', 'polite');
+    el.setAttribute('role', 'alert');
+    el.setAttribute('aria-live', 'assertive');
+    el.setAttribute('tabindex', '0');
+
+    // Allow keyboard dismiss: clicking or focusing + Escape removes the toast.
+    el.addEventListener('click', () => {
+      removeToast(el);
+    });
 
     document.body.appendChild(el);
     const timers: ReturnType<typeof window.setTimeout>[] = [];
@@ -91,15 +89,35 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
       const removeTimer = window.setTimeout(() => {
-        el.remove();
-        const idx = activeToasts.findIndex((t) => t.el === el);
-        if (idx !== -1) activeToasts.splice(idx, 1);
+        removeToast(el);
       }, 300);
       timers.push(removeTimer);
     }, TOAST_DURATION_MS);
     timers.push(fadeTimer);
     activeToasts.push({ el, timers });
   }
+
+  function removeToast(el: HTMLDivElement): void {
+    const idx = activeToasts.findIndex((t) => t.el === el);
+    if (idx !== -1) {
+      const entry = activeToasts[idx]!;
+      for (const id of entry.timers) window.clearTimeout(id);
+      activeToasts.splice(idx, 1);
+    }
+    el.remove();
+  }
+
+  function clearAllToasts(): void {
+    for (const { el } of activeToasts) {
+      el.remove();
+    }
+    activeToasts.length = 0;
+  }
+
+  // Global Escape key handler to dismiss all active toasts.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') clearAllToasts();
+  });
 
   function stopWatching(): void {
     if (debounceTimer !== null) {
