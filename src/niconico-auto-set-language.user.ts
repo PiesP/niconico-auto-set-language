@@ -290,6 +290,10 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
   window.addEventListener('beforeunload', () => {
     stopWatching();
+    window.removeEventListener('popstate', checkNavigation);
+    if (typeof navigation !== 'undefined' && typeof navigation.removeEventListener === 'function') {
+      navigation.removeEventListener('navigate', checkNavigation);
+    }
   });
 
   function startNavObserver(): void {
