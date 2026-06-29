@@ -133,13 +133,13 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       if (form instanceof HTMLFormElement) return { form, input };
     }
 
-    // Strategy 2: any form that has a select or input with "language" in the name
-    const fallbackInput = document.querySelector<HTMLInputElement | HTMLSelectElement>(
-      'select[name="language"],input[name="lang"],[data-testid="language-select"]'
+    // Strategy 2: any form that has an input with "lang" in the name or a language testid
+    const fallbackInput = document.querySelector<HTMLInputElement>(
+      'input[name="lang"],[data-testid="language-select"]'
     );
     if (fallbackInput) {
       const form = fallbackInput.closest('form');
-      if (form instanceof HTMLFormElement && fallbackInput instanceof HTMLInputElement) {
+      if (form instanceof HTMLFormElement) {
         return { form, input: fallbackInput };
       }
     }
