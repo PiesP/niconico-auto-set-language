@@ -12,6 +12,7 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @noframes
 // ==/UserScript==
 
 declare function GM_registerMenuCommand(name: string, callback: () => void): void;
