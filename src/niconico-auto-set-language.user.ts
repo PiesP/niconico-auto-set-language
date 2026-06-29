@@ -265,17 +265,35 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
   function startNavObserver(): void {
     if (navObserver !== null) return;
+
+    // Prefer the Navigation API when available — fires only on actual
+    // navigation events without observing DOM mutations site-wide.
+    if (typeof navigation !== 'undefined' && typeof navigation.addEventListener === 'function') {
+      navigation.addEventListener('navigate', checkNavigation);
+      return;
+    }
+
+    // Fallback: narrow-scope MutationObserver on the watch container.
+    const navTarget =
+      document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
+      document.querySelector(SELECTOR_WATCH_CONTAINER) ??
+      document.body;
+
     navObserver = new MutationObserver(() => {
       checkNavigation();
     });
-    if (document.body) {
-      navObserver.observe(document.body, { childList: true, subtree: true });
+    if (navTarget) {
+      navObserver.observe(navTarget, { childList: true, subtree: true });
     } else {
       document.addEventListener(
         'DOMContentLoaded',
         () => {
-          if (navObserver && document.body) {
-            navObserver.observe(document.body, { childList: true, subtree: true });
+          if (navObserver) {
+            const lateTarget =
+              document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
+              document.querySelector(SELECTOR_WATCH_CONTAINER) ??
+              document.body;
+            if (lateTarget) navObserver.observe(lateTarget, { childList: true, subtree: true });
           }
         },
         { once: true }
