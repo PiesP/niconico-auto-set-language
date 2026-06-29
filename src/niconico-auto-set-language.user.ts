@@ -110,6 +110,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     }
     if (navObserver !== null) {
       navObserver.disconnect();
+      navObserver = null;
     }
     clearAllToasts();
   }
