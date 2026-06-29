@@ -254,15 +254,15 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   }
 
   // SPA navigation detection: re-run on URL changes
-  let lastLocation = window.location.href;
+  let lastLocation = window.location.pathname;
   let navDebounceTimer: ReturnType<typeof window.setTimeout> | null = null;
 
   function checkNavigation(): void {
     if (navDebounceTimer !== null) return;
     navDebounceTimer = window.setTimeout(() => {
       navDebounceTimer = null;
-      if (window.location.href !== lastLocation) {
-        lastLocation = window.location.href;
+      if (window.location.pathname !== lastLocation) {
+        lastLocation = window.location.pathname;
         run();
       }
     }, CHECK_DEBOUNCE_MS);
