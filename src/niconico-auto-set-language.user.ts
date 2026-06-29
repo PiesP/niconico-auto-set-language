@@ -141,12 +141,36 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     return null;
   }
 
+  /**
+   * Validate that a form's action URL is safe to submit — must be same-origin
+   * or match *.nicovideo.jp to prevent credential leakage to third parties.
+   */
+  function isFormActionSafe(form: HTMLFormElement): boolean {
+    const action = form.action;
+    if (!action) return true; // No action means current page (same-origin)
+    try {
+      const url = new URL(action, window.location.origin);
+      if (url.origin === window.location.origin) return true;
+      return url.hostname.endsWith('.nicovideo.jp');
+    } catch {
+      return false; // Invalid URL — reject
+    }
+  }
+
   function tryChangeLanguage(): boolean {
     if (submitted) return true;
     if (!isEnabled()) return false;
 
     const found = findLanguageForm();
     if (!found) return false;
+
+    if (!isFormActionSafe(found.form)) {
+      console.warn(
+        '[NicoNico Language] Skipping form submission: action URL is not safe:',
+        found.form.action
+      );
+      return false;
+    }
 
     try {
       found.input.value = TARGET_LANGUAGE;
