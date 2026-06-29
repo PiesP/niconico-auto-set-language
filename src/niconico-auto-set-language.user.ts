@@ -235,9 +235,6 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   // Listen to popstate (back/forward navigation)
   window.addEventListener('popstate', checkNavigation);
 
-  // Listen to yt-navigate-end (Niconico SPA navigation event)
-  window.addEventListener('yt-navigate-end', checkNavigation);
-
   // Also observe for SPA content replacement (narrow scope to body)
   startNavObserver();
 
