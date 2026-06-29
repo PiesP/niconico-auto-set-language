@@ -53,7 +53,14 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     GM_setValue(STORAGE_KEY_ENABLED, value);
   }
 
-  let submitted = false;
+  // Unified lifecycle state: IDLE → WATCHING → SUBMITTED → IDLE
+  enum WatchState {
+    IDLE = 'idle',
+    WATCHING = 'watching',
+    SUBMITTED = 'submitted',
+  }
+
+  let watchState: WatchState = WatchState.IDLE;
   let observer: MutationObserver | null = null;
   let observeTimeout: ReturnType<typeof window.setTimeout> | null = null;
   let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
@@ -79,15 +86,13 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
     document.body.appendChild(el);
     const timers: ReturnType<typeof window.setTimeout>[] = [];
-    const entryIndex = activeToasts.length;
     const fadeTimer = window.setTimeout(() => {
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
       const removeTimer = window.setTimeout(() => {
         el.remove();
-        if (activeToasts[entryIndex]?.el === el) {
-          activeToasts.splice(entryIndex, 1);
-        }
+        const idx = activeToasts.findIndex((t) => t.el === el);
+        if (idx !== -1) activeToasts.splice(idx, 1);
       }, 300);
       timers.push(removeTimer);
     }, TOAST_DURATION_MS);
@@ -112,6 +117,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       navObserver.disconnect();
       navObserver = null;
     }
+    watchState = WatchState.IDLE;
     clearAllToasts();
   }
 
@@ -158,7 +164,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   }
 
   function tryChangeLanguage(): boolean {
-    if (submitted) return true;
+    if (watchState === WatchState.SUBMITTED) return true;
     if (!isEnabled()) return false;
 
     const found = findLanguageForm();
@@ -176,15 +182,15 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       found.input.value = TARGET_LANGUAGE;
       toast('Changing language to Japanese...', 'info');
 
-      // Set submitted BEFORE submit() to prevent retry loops.
+      // Set state to SUBMITTED BEFORE submit() to prevent retry loops.
       // If submit() throws, we reset it in the catch block.
-      submitted = true;
+      watchState = WatchState.SUBMITTED;
       found.form.submit();
       stopWatching();
       return true;
     } catch (err) {
-      // Reset submitted on failure so we can retry
-      submitted = false;
+      // Reset state on failure so we can retry
+      watchState = WatchState.WATCHING;
       console.error('[NicoNico Language] Failed to submit language form:', err);
       toast('Failed to change language.', 'error');
       stopWatching();
@@ -193,7 +199,8 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   }
 
   function watchForLanguageForm(): void {
-    if (observer !== null) return;
+    if (watchState === WatchState.WATCHING) return;
+    watchState = WatchState.WATCHING;
 
     // Scope the observer to the video player container if available,
     // falling back to document.body only when necessary.
@@ -207,7 +214,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
     observer = new MutationObserver((mutations) => {
       // Bail out if we were disconnected while mutations were in-flight.
-      if (observer === null) return;
+      if (watchState !== WatchState.WATCHING) return;
 
       // Early return: skip mutations clearly unrelated to the language form
       if (mutations.length > 0) {
@@ -231,15 +238,15 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
     observeTimeout = window.setTimeout(() => {
       // Guard: stopWatching() may have already been called by tryChangeLanguage
-      // or the timeout itself being cleared — only proceed if we still have an observer.
-      if (observer !== null) {
+      // or the timeout itself being cleared — only proceed if we're still watching.
+      if (watchState === WatchState.WATCHING) {
         stopWatching();
       }
     }, OBSERVE_TIMEOUT_MS);
   }
 
   function run(): void {
-    submitted = false;
+    watchState = WatchState.IDLE;
     // stopWatching() is idempotent — safe to call whether or not we have an observer.
     stopWatching();
     if (tryChangeLanguage()) return;
