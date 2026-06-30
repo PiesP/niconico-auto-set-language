@@ -232,25 +232,9 @@
 
     if (!targetNode) return;
 
-    observer = new MutationObserver((mutations) => {
+    observer = new MutationObserver(() => {
       // Bail out if we were disconnected while mutations were in-flight.
       if (watchState !== WatchState.WATCHING) return;
-
-      // Only react to mutations that involve the language form or its container
-      if (mutations.length > 0) {
-        const relevant = mutations.some((m) => {
-          // Check if any newly-added node contains the language input in its subtree
-          for (const node of m.addedNodes) {
-            if (node instanceof HTMLElement && node.querySelector(SELECTOR_LANGUAGE_INPUT))
-              return true;
-          }
-          // Check if the mutation target is itself inside the language form
-          return (
-            m.target instanceof HTMLElement && m.target.closest(SELECTOR_LANGUAGE_INPUT) !== null
-          );
-        });
-        if (!relevant) return;
-      }
 
       if (debounceTimer !== null) return;
       debounceTimer = window.setTimeout(() => {
