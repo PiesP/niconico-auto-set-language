@@ -31,7 +31,7 @@
   const TOAST_BASE_STYLE =
     'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
 
-  const TOAST_COLORS: Record<string, string> = {
+  const TOAST_COLORS: Record<'error' | 'info' | 'success', string> = {
     error: '#f44336',
     info: '#2196F3',
     success: '#4CAF50',
@@ -78,9 +78,7 @@
     el.setAttribute('tabindex', '0');
 
     // Allow keyboard dismiss: clicking removes the toast.
-    el.addEventListener('click', () => {
-      removeToast();
-    });
+    el.addEventListener('click', () => removeToast());
 
     document.body.appendChild(el);
     const timers: ReturnType<typeof window.setTimeout>[] = [];
@@ -288,13 +286,11 @@
     }, CHECK_DEBOUNCE_MS);
   }
 
-  // Listen to popstate (back/forward navigation)
   window.addEventListener('popstate', checkNavigation);
 
   // Also observe for SPA content replacement (narrow scope to body)
   startNavObserver();
 
-  // Initial run
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run, { once: true });
   } else {
@@ -338,9 +334,7 @@
     // Fallback: narrow-scope MutationObserver on the watch container.
     const navTarget = findWatchContainer() ?? document.body;
 
-    navObserver = new MutationObserver(() => {
-      checkNavigation();
-    });
+    navObserver = new MutationObserver(() => checkNavigation());
     if (navTarget) {
       navObserver.observe(navTarget, { childList: true, subtree: true });
     } else {
