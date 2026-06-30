@@ -15,10 +15,6 @@
 // @noframes
 // ==/UserScript==
 
-declare function GM_registerMenuCommand(name: string, callback: () => void): void;
-declare function GM_setValue(name: string, value: unknown): void;
-declare function GM_getValue<T>(name: string, defaultValue: T): T;
-
 (() => {
   const TARGET_LANGUAGE = 'ja-jp';
   const OBSERVE_TIMEOUT_MS = 5000;
@@ -30,6 +26,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   const SELECTOR_LANGUAGE_INPUT = 'form input[name="language"]';
   const SELECTOR_WATCH_PAGE_CONTAINER = '#watch-page-container';
   const SELECTOR_WATCH_CONTAINER = '.watch-container';
+  const NICONICO_DOMAIN_SUFFIX = '.nicovideo.jp';
 
   const TOAST_BASE_STYLE =
     'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
@@ -64,10 +61,14 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
   let navObserver: MutationObserver | null = null;
   let navApiRegistered = false;
-  const activeToasts: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] }[] = [];
+  let currentToast: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] } | null =
+    null;
 
   function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     if (!document.body) return;
+
+    // Remove existing toast before showing a new one
+    clearAllToasts();
 
     const el = document.createElement('div');
     el.textContent = message;
@@ -76,9 +77,9 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     el.setAttribute('aria-live', 'assertive');
     el.setAttribute('tabindex', '0');
 
-    // Allow keyboard dismiss: clicking or focusing + Escape removes the toast.
+    // Allow keyboard dismiss: clicking removes the toast.
     el.addEventListener('click', () => {
-      removeToast(el);
+      removeToast();
     });
 
     document.body.appendChild(el);
@@ -87,29 +88,23 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       el.style.transition = 'opacity 0.25s';
       el.style.opacity = '0';
       const removeTimer = window.setTimeout(() => {
-        removeToast(el);
+        removeToast();
       }, 300);
       timers.push(removeTimer);
     }, TOAST_DURATION_MS);
     timers.push(fadeTimer);
-    activeToasts.push({ el, timers });
+    currentToast = { el, timers };
   }
 
-  function removeToast(el: HTMLDivElement): void {
-    const idx = activeToasts.findIndex((t) => t.el === el);
-    if (idx !== -1) {
-      const entry = activeToasts[idx]!;
-      for (const id of entry.timers) window.clearTimeout(id);
-      activeToasts.splice(idx, 1);
-    }
-    el.remove();
+  function removeToast(): void {
+    if (currentToast === null) return;
+    for (const id of currentToast.timers) window.clearTimeout(id);
+    currentToast.el.remove();
+    currentToast = null;
   }
 
   function clearAllToasts(): void {
-    for (const { el } of activeToasts) {
-      el.remove();
-    }
-    activeToasts.length = 0;
+    removeToast();
   }
 
   // Global Escape key handler to dismiss all active toasts.
@@ -183,7 +178,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     try {
       const url = new URL(action, window.location.origin);
       if (url.origin === window.location.origin) return true;
-      return url.hostname.endsWith('.nicovideo.jp');
+      return url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
     } catch {
       return false; // Invalid URL — reject
     }
