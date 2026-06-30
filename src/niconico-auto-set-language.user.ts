@@ -34,14 +34,11 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   const TOAST_BASE_STYLE =
     'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
 
-  function toastBg(type: 'success' | 'error' | 'info'): string {
-    const map: Record<'success' | 'error' | 'info', string> = {
-      error: '#f44336',
-      info: '#2196F3',
-      success: '#4CAF50',
-    };
-    return map[type];
-  }
+  const TOAST_COLORS: Record<string, string> = {
+    error: '#f44336',
+    info: '#2196F3',
+    success: '#4CAF50',
+  };
 
   // SSOT: GM storage is the single source of truth for enabled state
   function isEnabled(): boolean {
@@ -66,6 +63,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
   let observeTimeout: ReturnType<typeof window.setTimeout> | null = null;
   let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
   let navObserver: MutationObserver | null = null;
+  let navApiRegistered = false;
   const activeToasts: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] }[] = [];
 
   function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
@@ -73,7 +71,7 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
     const el = document.createElement('div');
     el.textContent = message;
-    el.style.cssText = TOAST_BASE_STYLE + toastBg(type);
+    el.style.cssText = TOAST_BASE_STYLE + TOAST_COLORS[type];
     el.setAttribute('role', 'alert');
     el.setAttribute('aria-live', 'assertive');
     el.setAttribute('tabindex', '0');
@@ -135,6 +133,15 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     if (navObserver !== null) {
       navObserver.disconnect();
       navObserver = null;
+    }
+    if (navApiRegistered) {
+      if (
+        typeof navigation !== 'undefined' &&
+        typeof navigation.removeEventListener === 'function'
+      ) {
+        navigation.removeEventListener('navigate', checkNavigation);
+      }
+      navApiRegistered = false;
     }
     watchState = WatchState.IDLE;
     clearAllToasts();
@@ -272,7 +279,18 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     watchForLanguageForm();
   }
 
-  // SPA navigation detection: re-run on URL changes
+  // SPA navigation detection — three layered mechanisms for maximum
+  // cross-environment compatibility:
+  //
+  // 1. `popstate` event — covers back/forward browser navigation,
+  //    required for all browsers without the Navigation API.
+  // 2. Navigation API (`navigation.navigate` event) — modern standard
+  //    for SPA route changes, enabled in `startNavObserver()`.
+  // 3. MutationObserver fallback (in `startNavObserver()`) — catches
+  //    DOM-driven navigations on browsers without Navigation API support.
+  //
+  // All three funnel through the debounced `checkNavigation()`, so only
+  // one `run()` call occurs per navigation event.
   let lastLocation = window.location.pathname;
   let navDebounceTimer: ReturnType<typeof window.setTimeout> | null = null;
 
@@ -324,11 +342,13 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
   function startNavObserver(): void {
     if (navObserver !== null) return;
+    if (navApiRegistered) return;
 
     // Prefer the Navigation API when available — fires only on actual
     // navigation events without observing DOM mutations site-wide.
     if (typeof navigation !== 'undefined' && typeof navigation.addEventListener === 'function') {
       navigation.addEventListener('navigate', checkNavigation);
+      navApiRegistered = true;
       return;
     }
 
