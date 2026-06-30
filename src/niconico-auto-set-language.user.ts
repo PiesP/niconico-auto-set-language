@@ -112,6 +112,13 @@
     if (e.key === 'Escape') clearAllToasts();
   });
 
+  function findWatchContainer(): Element | null {
+    return (
+      document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
+      document.querySelector(SELECTOR_WATCH_CONTAINER)
+    );
+  }
+
   function stopWatching(): void {
     if (debounceTimer !== null) {
       window.clearTimeout(debounceTimer);
@@ -226,9 +233,7 @@
     // Scope the observer to the video player container if available.
     // If no container is found, skip observation entirely — the SPA
     // navigation listener will retry on the next page transition.
-    const targetNode =
-      document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
-      document.querySelector(SELECTOR_WATCH_CONTAINER);
+    const targetNode = findWatchContainer();
 
     if (!targetNode) return;
 
@@ -251,7 +256,6 @@
   }
 
   function run(): void {
-    watchState = WatchState.IDLE;
     // stopWatching() is idempotent — safe to call whether or not we have an observer.
     stopWatching();
     if (tryChangeLanguage()) return;
@@ -332,10 +336,7 @@
     }
 
     // Fallback: narrow-scope MutationObserver on the watch container.
-    const navTarget =
-      document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
-      document.querySelector(SELECTOR_WATCH_CONTAINER) ??
-      document.body;
+    const navTarget = findWatchContainer() ?? document.body;
 
     navObserver = new MutationObserver(() => {
       checkNavigation();
@@ -347,10 +348,7 @@
         'DOMContentLoaded',
         () => {
           if (navObserver) {
-            const lateTarget =
-              document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
-              document.querySelector(SELECTOR_WATCH_CONTAINER) ??
-              document.body;
+            const lateTarget = findWatchContainer() ?? document.body;
             if (lateTarget) navObserver.observe(lateTarget, { childList: true, subtree: true });
           }
         },
