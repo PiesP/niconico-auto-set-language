@@ -221,13 +221,12 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
     if (watchState === WatchState.WATCHING) return;
     watchState = WatchState.WATCHING;
 
-    // Scope the observer to the video player container if available,
-    // falling back to document.body only when necessary.
-    // Never use documentElement to avoid observing all DOM changes.
+    // Scope the observer to the video player container if available.
+    // If no container is found, skip observation entirely — the SPA
+    // navigation listener will retry on the next page transition.
     const targetNode =
       document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
-      document.querySelector(SELECTOR_WATCH_CONTAINER) ??
-      document.body;
+      document.querySelector(SELECTOR_WATCH_CONTAINER);
 
     if (!targetNode) return;
 
@@ -235,10 +234,15 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
       // Bail out if we were disconnected while mutations were in-flight.
       if (watchState !== WatchState.WATCHING) return;
 
-      // Early return: skip mutations clearly unrelated to the language form
+      // Only react to mutations that involve the language form or its container
       if (mutations.length > 0) {
         const relevant = mutations.some((m) => {
-          if (m.type === 'childList') return true;
+          // Check if any newly-added node contains the language input in its subtree
+          for (const node of m.addedNodes) {
+            if (node instanceof HTMLElement && node.querySelector(SELECTOR_LANGUAGE_INPUT))
+              return true;
+          }
+          // Check if the mutation target is itself inside the language form
           return (
             m.target instanceof HTMLElement && m.target.closest(SELECTOR_LANGUAGE_INPUT) !== null
           );
@@ -255,13 +259,9 @@ declare function GM_getValue<T>(name: string, defaultValue: T): T;
 
     observer.observe(targetNode, { childList: true, subtree: true });
 
-    observeTimeout = window.setTimeout(() => {
-      // Guard: stopWatching() may have already been called by tryChangeLanguage
-      // or the timeout itself being cleared — only proceed if we're still watching.
-      if (watchState === WatchState.WATCHING) {
-        stopWatching();
-      }
-    }, OBSERVE_TIMEOUT_MS);
+    // Timeout auto-stops watching if the language form never appears.
+    // stopWatching() is already idempotent via null checks, so no guard needed.
+    observeTimeout = window.setTimeout(stopWatching, OBSERVE_TIMEOUT_MS);
   }
 
   function run(): void {
