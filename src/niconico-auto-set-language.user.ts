@@ -45,7 +45,13 @@
   }
 
   function setEnabled(value: boolean): void {
-    if (typeof GM_setValue !== 'function') return;
+    if (typeof GM_setValue !== 'function') {
+      console.warn(
+        '[NicoNico Language] GM_setValue unavailable — toggle state not persisted. ' +
+          'Check that @grant GM_setValue is declared in the userscript header.'
+      );
+      return;
+    }
     GM_setValue(STORAGE_KEY_ENABLED, value);
   }
 
@@ -107,9 +113,11 @@
   }
 
   // Global Escape key handler to dismiss all active toasts.
-  document.addEventListener('keydown', (e) => {
+  // Named reference so it can be removed in stopWatching().
+  function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') clearAllToasts();
-  });
+  }
+  document.addEventListener('keydown', handleKeydown);
 
   function findWatchContainer(): Element | null {
     return (
@@ -157,6 +165,7 @@
       }
       navApiRegistered = false;
     }
+    document.removeEventListener('keydown', handleKeydown);
     watchState = WatchState.IDLE;
     clearAllToasts();
   }
@@ -329,14 +338,6 @@
       }
     });
   }
-
-  window.addEventListener('beforeunload', () => {
-    stopWatching();
-    window.removeEventListener('popstate', checkNavigation);
-    if (typeof navigation !== 'undefined' && typeof navigation.removeEventListener === 'function') {
-      navigation.removeEventListener('navigate', checkNavigation);
-    }
-  });
 
   /**
    * Start watching for SPA navigation events.
