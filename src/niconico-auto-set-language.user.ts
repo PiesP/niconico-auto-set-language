@@ -108,6 +108,7 @@
     currentToast = null;
   }
 
+  /** Semantic wrapper for readability at call sites (Escape handler, disable flow). */
   function clearAllToasts(): void {
     removeToast();
   }
