@@ -26,6 +26,7 @@
   const SELECTOR_LANGUAGE_INPUT = 'form input[name="language"]';
   const SELECTOR_WATCH_PAGE_CONTAINER = '#watch-page-container';
   const SELECTOR_WATCH_CONTAINER = '.watch-container';
+  const SELECTOR_NAV_CONTAINER_BROAD = '#root, .BaseUniLayout-main';
   const NICONICO_DOMAIN_SUFFIX = '.nicovideo.jp';
 
   const TOAST_BASE_STYLE =
@@ -115,6 +116,19 @@
       document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
       document.querySelector(SELECTOR_WATCH_CONTAINER)
     );
+  }
+
+  /**
+   * Find the best available container for navigation observation.
+   * Tries watch-specific containers first, then broader page containers
+   * that exist across NicoNico's different layout types (React-based
+   * watch pages use #root; classic pages use .BaseUniLayout-main).
+   * Returns null if no container is found — callers should NOT fall back
+   * to document.body due to the extreme mutation overhead on content-heavy
+   * NicoNico pages (live comments, ads, sidebar DOM churn).
+   */
+  function findNavContainer(): Element | null {
+    return findWatchContainer() ?? document.querySelector(SELECTOR_NAV_CONTAINER_BROAD);
   }
 
   function stopWatching(): void {
@@ -267,8 +281,13 @@
   //    required for all browsers without the Navigation API.
   // 2. Navigation API (`navigation.navigate` event) — modern standard
   //    for SPA route changes, enabled in `startNavObserver()`.
-  // 3. MutationObserver fallback (in `startNavObserver()`) — catches
-  //    DOM-driven navigations on browsers without Navigation API support.
+  //    NOTE: Navigation API is Chromium-only (Chrome 105+, Edge 105+).
+  //    Firefox and Safari do not support it. In those browsers the
+  //    narrow-scope MutationObserver fallback (mechanism 3) handles SPA
+  //    transitions instead.
+  // 3. MutationObserver (in `startNavObserver()`) — narrow-scope observer
+  //    on a page-container element. Catches SPA content replacement in
+  //    browsers without Navigation API (Firefox, Safari).
   //
   // All three funnel through the debounced `checkNavigation()`, so only
   // one `run()` call occurs per navigation event.
@@ -288,7 +307,7 @@
 
   window.addEventListener('popstate', checkNavigation);
 
-  // Also observe for SPA content replacement (narrow scope to body)
+  // Also observe for SPA content replacement (narrow-scope page container)
   startNavObserver();
 
   if (document.readyState === 'loading') {
@@ -319,6 +338,16 @@
     }
   });
 
+  /**
+   * Start watching for SPA navigation events.
+   *
+   * BROWSER SUPPORT:
+   * - Chromium (Chrome, Edge): uses the Navigation API (no DOM observer).
+   * - Firefox, Safari: uses a narrow-scope MutationObserver on the page
+   *   content container (never document.body). If no suitable container
+   *   is found, SPA transitions in these browsers rely on the popstate
+   *   handler + initial run() call instead.
+   */
   function startNavObserver(): void {
     if (navObserver !== null) return;
     if (navApiRegistered) return;
@@ -331,22 +360,23 @@
       return;
     }
 
-    // Fallback: narrow-scope MutationObserver on the watch container.
-    const navTarget = findWatchContainer() ?? document.body;
+    // Fallback: narrow-scope MutationObserver on a page container.
+    // NEVER fall back to document.body — its subtree fires hundreds of
+    // times per second on content-heavy NicoNico pages (live comments,
+    // ads, sidebar), causing severe performance degradation.
+    const navTarget = findNavContainer();
 
-    navObserver = new MutationObserver(() => checkNavigation());
     if (navTarget) {
+      navObserver = new MutationObserver(() => checkNavigation());
       navObserver.observe(navTarget, { childList: true, subtree: true });
     } else {
-      document.addEventListener(
-        'DOMContentLoaded',
-        () => {
-          if (navObserver) {
-            const lateTarget = findWatchContainer() ?? document.body;
-            if (lateTarget) navObserver.observe(lateTarget, { childList: true, subtree: true });
-          }
-        },
-        { once: true }
+      // No suitable container found — skip the observer. The popstate
+      // handler and initial run() call still cover back/forward navigation
+      // and the initial page load. SPA transitions in Firefox/Safari on
+      // non-standard page layouts may not auto-trigger language detection.
+      console.debug(
+        '[NicoNico Language] No container found for nav observer; ' +
+          'SPA navigation detection limited to popstate events.'
       );
     }
   }
