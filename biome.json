@@ -22,24 +22,34 @@
     "rules": {
       "preset": "recommended",
       "correctness": {
-        "noUnusedImports": "warn",
-        "noUnusedVariables": "warn"
+        "noUnusedImports": "error",
+        "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": "warn"
       },
       "style": {
         "noNonNullAssertion": "off",
         "useConst": "error",
-        "noParameterAssign": "warn"
+        "noParameterAssign": "warn",
+        "noUnusedTemplateLiteral": "error",
+        "useExponentiationOperator": "error"
       },
       "suspicious": {
         "noExplicitAny": "error",
         "noConfusingVoidType": "off",
         "noControlCharactersInRegex": "off",
         "noDocumentCookie": "off",
-        "noImplicitAnyLet": "error"
+        "noImplicitAnyLet": "error",
+        "useIterableCallbackReturn": "error",
+        "noSelfCompare": "warn",
+        "noArrayIndexKey": "off"
       },
       "complexity": {
         "noForEach": "off",
-        "noStaticOnlyClass": "off"
+        "noStaticOnlyClass": "off",
+        "noUselessTernary": "error",
+        "noUselessSwitchCase": "error",
+        "noUselessEmptyExport": "error",
+        "noUselessLoneBlockStatements": "error"
       },
       "performance": {
         "noAccumulatingSpread": "warn"

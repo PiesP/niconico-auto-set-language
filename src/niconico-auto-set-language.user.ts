@@ -20,6 +20,7 @@
   const OBSERVE_TIMEOUT_MS = 5000;
   const CHECK_DEBOUNCE_MS = 100;
   const TOAST_DURATION_MS = 2500;
+  const TOAST_FADE_OUT_MS = 300;
   const STORAGE_KEY_ENABLED = 'nicoauto-enabled';
 
   // Centralized DOM selectors — update these if NicoNico changes its markup.
@@ -94,7 +95,7 @@
       el.style.opacity = '0';
       const removeTimer = window.setTimeout(() => {
         removeToast();
-      }, 300);
+      }, TOAST_FADE_OUT_MS);
       timers.push(removeTimer);
     }, TOAST_DURATION_MS);
     timers.push(fadeTimer);
@@ -165,6 +166,10 @@
         navigation.removeEventListener('navigate', checkNavigation);
       }
       navApiRegistered = false;
+    }
+    if (navDebounceTimer !== null) {
+      window.clearTimeout(navDebounceTimer);
+      navDebounceTimer = null;
     }
     document.removeEventListener('keydown', handleKeydown);
     watchState = WatchState.IDLE;
