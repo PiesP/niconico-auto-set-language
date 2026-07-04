@@ -7,7 +7,9 @@
     "defaultBranch": "master"
   },
   "files": {
-    "includes": ["src/**"],
+    "includes": [
+      "src/**"
+    ],
     "ignoreUnknown": true
   },
   "formatter": {
