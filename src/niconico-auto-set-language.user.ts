@@ -217,7 +217,7 @@
     try {
       const url = new URL(action, window.location.origin);
       if (url.origin === window.location.origin) return true;
-      return url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
+      return url.hostname === 'nicovideo.jp' || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
     } catch {
       return false; // Invalid URL — reject
     }
