@@ -13,6 +13,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @noframes
+// @run-at     document-end
 // ==/UserScript==
 
 (() => {
@@ -171,6 +172,7 @@
       window.clearTimeout(navDebounceTimer);
       navDebounceTimer = null;
     }
+    window.removeEventListener('popstate', checkNavigation);
     document.removeEventListener('keydown', handleKeydown);
     watchState = WatchState.IDLE;
     clearAllToasts();
@@ -180,7 +182,10 @@
    * Locate the language form. Try multiple selector strategies to stay
    * resilient against minor DOM restructuring on NicoNico's side.
    */
-  function findLanguageForm(): { form: HTMLFormElement; input: HTMLInputElement } | null {
+  function findLanguageForm(): {
+    form: HTMLFormElement;
+    input: HTMLInputElement | HTMLSelectElement;
+  } | null {
     // Strategy 1: input with name="language" inside a form (original approach)
     const input = document.querySelector<HTMLInputElement>(SELECTOR_LANGUAGE_INPUT);
     if (input) {
@@ -189,10 +194,10 @@
     }
 
     // Strategy 2: any form that has an input with "lang" in the name or a language testid
-    const fallbackInput = document.querySelector<HTMLInputElement>(
+    const fallbackInput = document.querySelector<HTMLInputElement | HTMLSelectElement>(
       'input[name="lang"],[data-testid="language-select"]'
     );
-    if (fallbackInput) {
+    if (fallbackInput instanceof HTMLInputElement || fallbackInput instanceof HTMLSelectElement) {
       const form = fallbackInput.closest('form');
       if (form instanceof HTMLFormElement) {
         return { form, input: fallbackInput };
