@@ -43,7 +43,7 @@ const Logger = (() => {
   const NICONICO_DOMAIN_SUFFIX = '.nicovideo.jp';
 
   const TOAST_BASE_STYLE =
-    'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);background:';
+    'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);cursor:pointer;transition:transform 0.15s;background:';
 
   const TOAST_COLORS: Record<'error' | 'info' | 'success', string> = {
     error: '#f44336',
@@ -99,6 +99,24 @@ const Logger = (() => {
 
     // Allow keyboard dismiss: clicking removes the toast.
     el.addEventListener('click', () => removeToast());
+
+    // Focus-visible outline: visual indicator for keyboard navigation
+    el.addEventListener('focus', () => {
+      el.style.outline = '2px solid #fff';
+      el.style.outlineOffset = '2px';
+    });
+    el.addEventListener('blur', () => {
+      el.style.outline = '';
+      el.style.outlineOffset = '';
+    });
+
+    // Hover: slight scale-up for visual feedback
+    el.addEventListener('mouseenter', () => {
+      el.style.transform = 'scale(1.04)';
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = '';
+    });
 
     document.body.appendChild(el);
     const timers: ReturnType<typeof window.setTimeout>[] = [];
