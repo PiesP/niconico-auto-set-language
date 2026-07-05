@@ -16,6 +16,17 @@
 // @run-at     document-end
 // ==/UserScript==
 
+// ── Logger ──
+const Logger = (() => {
+  const PREFIX = '[NicoNico Language]';
+  return {
+    debug: (...args: unknown[]) => console.debug(PREFIX, ...args),
+    info: (...args: unknown[]) => console.info(PREFIX, ...args),
+    warn: (...args: unknown[]) => console.warn(PREFIX, ...args),
+    error: (...args: unknown[]) => console.error(PREFIX, ...args),
+  };
+})();
+
 (() => {
   const TARGET_LANGUAGE = 'ja-jp';
   const OBSERVE_TIMEOUT_MS = 5000;
@@ -48,8 +59,8 @@
 
   function setEnabled(value: boolean): void {
     if (typeof GM_setValue !== 'function') {
-      console.warn(
-        '[NicoNico Language] GM_setValue unavailable — toggle state not persisted. ' +
+      Logger.warn(
+        'GM_setValue unavailable — toggle state not persisted. ' +
           'Check that @grant GM_setValue is declared in the userscript header.'
       );
       return;
@@ -231,10 +242,7 @@
     if (!found) return false;
 
     if (!isFormActionSafe(found.form)) {
-      console.warn(
-        '[NicoNico Language] Skipping form submission: action URL is not safe:',
-        found.form.action
-      );
+      Logger.warn('Skipping form submission: action URL is not safe:', found.form.action);
       return false;
     }
 
@@ -251,7 +259,7 @@
     } catch (err) {
       // Reset state on failure so we can retry
       watchState = WatchState.WATCHING;
-      console.error('[NicoNico Language] Failed to submit language form:', err);
+      Logger.error('Failed to submit language form:', err);
       toast('Failed to change language.', 'error');
       stopWatching();
       return false;
@@ -386,8 +394,8 @@
       // handler and initial run() call still cover back/forward navigation
       // and the initial page load. SPA transitions in Firefox/Safari on
       // non-standard page layouts may not auto-trigger language detection.
-      console.debug(
-        '[NicoNico Language] No container found for nav observer; ' +
+      Logger.debug(
+        'No container found for nav observer; ' +
           'SPA navigation detection limited to popstate events.'
       );
     }
