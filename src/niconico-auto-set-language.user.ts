@@ -122,7 +122,7 @@ const Logger = (() => {
     document.body.appendChild(el);
     const timers: ReturnType<typeof window.setTimeout>[] = [];
     const fadeTimer = window.setTimeout(() => {
-      el.style.transition = 'opacity 0.25s';
+      el.style.transition = 'opacity 0.3s';
       el.style.opacity = '0';
       const removeTimer = window.setTimeout(() => {
         removeToast();
