@@ -236,20 +236,24 @@ const Logger = (() => {
     return null;
   }
 
+  /** Pure function: validates that a form action URL is safe to submit */
+  function isFormActionSafeAction(actionHref: string, origin: string): boolean {
+    if (!actionHref) return true;
+    try {
+      const url = new URL(actionHref, origin);
+      if (url.origin === origin) return true;
+      return url.hostname === 'nicovideo.jp' || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * Validate that a form's action URL is safe to submit — must be same-origin
    * or match *.nicovideo.jp to prevent credential leakage to third parties.
    */
   function isFormActionSafe(form: HTMLFormElement): boolean {
-    const action = form.action;
-    if (!action) return true; // No action means current page (same-origin)
-    try {
-      const url = new URL(action, window.location.origin);
-      if (url.origin === window.location.origin) return true;
-      return url.hostname === 'nicovideo.jp' || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
-    } catch {
-      return false; // Invalid URL — reject
-    }
+    return isFormActionSafeAction(form.action, window.location.origin);
   }
 
   function tryChangeLanguage(): boolean {
