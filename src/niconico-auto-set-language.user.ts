@@ -40,7 +40,8 @@ const Logger = (() => {
   const SELECTOR_WATCH_PAGE_CONTAINER = '#watch-page-container';
   const SELECTOR_WATCH_CONTAINER = '.watch-container';
   const SELECTOR_NAV_CONTAINER_BROAD = '#root, .BaseUniLayout-main';
-  const NICONICO_DOMAIN_SUFFIX = '.nicovideo.jp';
+  const NICONICO_DOMAIN = 'nicovideo.jp';
+  const NICONICO_DOMAIN_SUFFIX = `.${NICONICO_DOMAIN}`;
 
   const TOAST_BASE_STYLE =
     'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);cursor:pointer;transition:transform 0.15s;background:';
@@ -242,7 +243,7 @@ const Logger = (() => {
     try {
       const url = new URL(actionHref, origin);
       if (url.origin === origin) return true;
-      return url.hostname === 'nicovideo.jp' || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
+      return url.hostname === NICONICO_DOMAIN || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
     } catch {
       return false;
     }
