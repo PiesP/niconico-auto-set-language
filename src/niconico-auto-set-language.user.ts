@@ -17,15 +17,13 @@
 // ==/UserScript==
 
 // ── Logger ──
-const Logger = (() => {
-  const PREFIX = '[NicoNico Language]';
-  return {
-    debug: (...args: unknown[]) => console.debug(PREFIX, ...args),
-    info: (...args: unknown[]) => console.info(PREFIX, ...args),
-    warn: (...args: unknown[]) => console.warn(PREFIX, ...args),
-    error: (...args: unknown[]) => console.error(PREFIX, ...args),
-  };
-})();
+const PREFIX = '[NicoNico Language]';
+const Logger = {
+  debug: (...args: unknown[]) => console.debug(PREFIX, ...args),
+  info: (...args: unknown[]) => console.info(PREFIX, ...args),
+  warn: (...args: unknown[]) => console.warn(PREFIX, ...args),
+  error: (...args: unknown[]) => console.error(PREFIX, ...args),
+};
 
 (() => {
   const TARGET_LANGUAGE = 'ja-jp';
@@ -242,6 +240,7 @@ const Logger = (() => {
 
   /** Pure function: validates that a form action URL is safe to submit */
   function isFormActionSafeAction(actionHref: string, origin: string): boolean {
+    // Empty action = submit to current page (same-origin) — always safe.
     if (!actionHref) return true;
     try {
       const url = new URL(actionHref, origin);
@@ -360,11 +359,19 @@ const Logger = (() => {
     }, CHECK_DEBOUNCE_MS);
   }
 
-  startEscapeHandler();
-  window.addEventListener('popstate', checkNavigation);
+  /**
+   * Centralised setup for all navigation and UI event detection.
+   * Registers popstate, Escape key, and SPA nav observer — called on
+   * both initial load and re-enable to ensure all listeners are restored
+   * after stopWatching() removes them.
+   */
+  function startNavigationDetection(): void {
+    startEscapeHandler();
+    window.addEventListener('popstate', checkNavigation);
+    startNavObserver();
+  }
 
-  // Also observe for SPA content replacement (narrow-scope page container)
-  startNavObserver();
+  startNavigationDetection();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run, { once: true });
@@ -378,8 +385,7 @@ const Logger = (() => {
       setEnabled(newValue);
       toast(`Script ${newValue ? 'enabled' : 'disabled'}.`, newValue ? 'success' : 'info');
       if (newValue) {
-        startEscapeHandler();
-        startNavObserver();
+        startNavigationDetection();
         run();
       } else {
         stopWatching();
