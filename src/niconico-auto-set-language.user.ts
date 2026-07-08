@@ -286,8 +286,6 @@ const Logger = (() => {
       stopWatching();
       return true;
     } catch (err) {
-      // Reset state on failure so we can retry
-      watchState = WatchState.WATCHING;
       Logger.error('Failed to submit language form:', err);
       toast('Failed to change language.', 'error');
       stopWatching();
@@ -348,15 +346,15 @@ const Logger = (() => {
   //
   // All three funnel through the debounced `checkNavigation()`, so only
   // one `run()` call occurs per navigation event.
-  let lastLocation = window.location.pathname;
+  let lastLocation = window.location.href;
   let navDebounceTimer: ReturnType<typeof window.setTimeout> | null = null;
 
   function checkNavigation(): void {
     if (navDebounceTimer !== null) return;
     navDebounceTimer = window.setTimeout(() => {
       navDebounceTimer = null;
-      if (window.location.pathname !== lastLocation) {
-        lastLocation = window.location.pathname;
+      if (window.location.href !== lastLocation) {
+        lastLocation = window.location.href;
         run();
       }
     }, CHECK_DEBOUNCE_MS);
