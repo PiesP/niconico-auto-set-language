@@ -150,7 +150,10 @@ const Logger = (() => {
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') clearAllToasts();
   }
-  document.addEventListener('keydown', handleKeydown);
+
+  function startEscapeHandler(): void {
+    document.addEventListener('keydown', handleKeydown);
+  }
 
   function findWatchContainer(): Element | null {
     return (
@@ -270,6 +273,9 @@ const Logger = (() => {
     }
 
     try {
+      // Language already matches — nothing to do.
+      if (found.input.value === TARGET_LANGUAGE) return true;
+
       found.input.value = TARGET_LANGUAGE;
       toast('Changing language to Japanese...', 'info');
 
@@ -356,6 +362,7 @@ const Logger = (() => {
     }, CHECK_DEBOUNCE_MS);
   }
 
+  startEscapeHandler();
   window.addEventListener('popstate', checkNavigation);
 
   // Also observe for SPA content replacement (narrow-scope page container)
@@ -373,6 +380,7 @@ const Logger = (() => {
       setEnabled(newValue);
       toast(`Script ${newValue ? 'enabled' : 'disabled'}.`, newValue ? 'success' : 'info');
       if (newValue) {
+        startEscapeHandler();
         startNavObserver();
         run();
       } else {
