@@ -32,6 +32,37 @@ const log = {
   const TOAST_FADE_OUT_MS = 300;
   const STORAGE_KEY_ENABLED = 'nicoauto-enabled';
 
+  // ── i18n ──
+  type SupportedLocale = 'ja' | 'en';
+  type I18nKey =
+    | 'toast.changing'
+    | 'toast.failed'
+    | 'toast.enabled'
+    | 'toast.disabled'
+    | 'menu.toggle';
+
+  const LOCALE: Record<SupportedLocale, Record<I18nKey, string>> = {
+    ja: {
+      'toast.changing': '言語を日本語に変更中...',
+      'toast.failed': '言語の変更に失敗しました。',
+      'toast.enabled': 'スクリプトを有効化しました。',
+      'toast.disabled': 'スクリプトを無効化しました。',
+      'menu.toggle': '自動言語設定の切替',
+    },
+    en: {
+      'toast.changing': 'Changing language to Japanese...',
+      'toast.failed': 'Failed to change language.',
+      'toast.enabled': 'Script enabled.',
+      'toast.disabled': 'Script disabled.',
+      'menu.toggle': 'Toggle Auto Set Language',
+    },
+  };
+
+  function t(key: I18nKey): string {
+    const lang: SupportedLocale = navigator.language.startsWith('ja') ? 'ja' : 'en';
+    return LOCALE[lang][key];
+  }
+
   // Centralized DOM selectors — update these if NicoNico changes its markup.
   const SELECTOR_LANGUAGE_INPUT = 'form input[name="language"]';
   const SELECTOR_WATCH_CONTAINER = '#watch-page-container';
@@ -232,7 +263,7 @@ const log = {
       if (found.input.value === TARGET_LANGUAGE) return true;
 
       found.input.value = TARGET_LANGUAGE;
-      toast('Changing language to Japanese...', 'info');
+      toast(t('toast.changing'), 'info');
 
       // Set state to SUBMITTED BEFORE submit() to prevent retry loops.
       // If submit() throws, we reset it in the catch block.
@@ -242,7 +273,7 @@ const log = {
       return true;
     } catch (err) {
       log.error('Failed to submit language form:', err);
-      toast('Failed to change language.', 'error');
+      toast(t('toast.failed'), 'error');
       stopWatching();
       return false;
     }
@@ -335,10 +366,10 @@ const log = {
   }
 
   if (typeof GM_registerMenuCommand === 'function') {
-    GM_registerMenuCommand('Toggle Auto Set Language', () => {
+    GM_registerMenuCommand(t('menu.toggle'), () => {
       const newValue = !isEnabled();
       setEnabled(newValue);
-      toast(`Script ${newValue ? 'enabled' : 'disabled'}.`, newValue ? 'success' : 'info');
+      toast(t(newValue ? 'toast.enabled' : 'toast.disabled'), newValue ? 'success' : 'info');
       if (newValue) {
         startNavigationDetection();
         run();
