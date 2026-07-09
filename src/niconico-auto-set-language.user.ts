@@ -16,11 +16,10 @@
 // @run-at     document-end
 // ==/UserScript==
 
-// ── Logger ──
+// ── log ──
 const PREFIX = '[NicoNico Language]';
-const Logger = {
+const log = {
   debug: (...args: unknown[]) => console.debug(PREFIX, ...args),
-  info: (...args: unknown[]) => console.info(PREFIX, ...args),
   warn: (...args: unknown[]) => console.warn(PREFIX, ...args),
   error: (...args: unknown[]) => console.error(PREFIX, ...args),
 };
@@ -35,9 +34,8 @@ const Logger = {
 
   // Centralized DOM selectors — update these if NicoNico changes its markup.
   const SELECTOR_LANGUAGE_INPUT = 'form input[name="language"]';
-  const SELECTOR_WATCH_PAGE_CONTAINER = '#watch-page-container';
-  const SELECTOR_WATCH_CONTAINER = '.watch-container';
-  const SELECTOR_NAV_CONTAINER_BROAD = '#root, .BaseUniLayout-main';
+  const SELECTOR_WATCH_CONTAINER = '#watch-page-container';
+  const SELECTOR_NAV_CONTAINER_BROAD = '#root';
   const NICONICO_DOMAIN = 'nicovideo.jp';
   const NICONICO_DOMAIN_SUFFIX = `.${NICONICO_DOMAIN}`;
 
@@ -58,7 +56,7 @@ const Logger = {
 
   function setEnabled(value: boolean): void {
     if (typeof GM_setValue !== 'function') {
-      Logger.warn(
+      log.warn(
         'GM_setValue unavailable — toggle state not persisted. ' +
           'Check that @grant GM_setValue is declared in the userscript header.'
       );
@@ -67,19 +65,11 @@ const Logger = {
     GM_setValue(STORAGE_KEY_ENABLED, value);
   }
 
-  // Unified lifecycle state: IDLE → WATCHING → SUBMITTED → IDLE
-  enum WatchState {
-    IDLE = 'idle',
-    WATCHING = 'watching',
-    SUBMITTED = 'submitted',
-  }
-
-  let watchState: WatchState = WatchState.IDLE;
+  let submitted = false;
   let observer: MutationObserver | null = null;
   let observeTimeout: ReturnType<typeof window.setTimeout> | null = null;
   let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
   let navObserver: MutationObserver | null = null;
-  let navApiRegistered = false;
   let currentToast: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] } | null =
     null;
 
@@ -87,7 +77,7 @@ const Logger = {
     if (!document.body) return;
 
     // Remove existing toast before showing a new one
-    clearAllToasts();
+    removeToast();
 
     const el = document.createElement('div');
     el.textContent = message;
@@ -138,15 +128,10 @@ const Logger = {
     currentToast = null;
   }
 
-  /** Semantic wrapper for readability at call sites (Escape handler, disable flow). */
-  function clearAllToasts(): void {
-    removeToast();
-  }
-
   // Global Escape key handler to dismiss all active toasts.
   // Named reference so it can be removed in stopWatching().
   function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') clearAllToasts();
+    if (e.key === 'Escape') removeToast();
   }
 
   function startEscapeHandler(): void {
@@ -154,17 +139,12 @@ const Logger = {
   }
 
   function findWatchContainer(): Element | null {
-    return (
-      document.querySelector(SELECTOR_WATCH_PAGE_CONTAINER) ??
-      document.querySelector(SELECTOR_WATCH_CONTAINER)
-    );
+    return document.querySelector(SELECTOR_WATCH_CONTAINER);
   }
 
   /**
    * Find the best available container for navigation observation.
-   * Tries watch-specific containers first, then broader page containers
-   * that exist across NicoNico's different layout types (React-based
-   * watch pages use #root; classic pages use .BaseUniLayout-main).
+   * Tries the watch container first, then the broader #root container.
    * Returns null if no container is found — callers should NOT fall back
    * to document.body due to the extreme mutation overhead on content-heavy
    * NicoNico pages (live comments, ads, sidebar DOM churn).
@@ -190,14 +170,8 @@ const Logger = {
       navObserver.disconnect();
       navObserver = null;
     }
-    if (navApiRegistered) {
-      if (
-        typeof navigation !== 'undefined' &&
-        typeof navigation.removeEventListener === 'function'
-      ) {
-        navigation.removeEventListener('navigate', checkNavigation);
-      }
-      navApiRegistered = false;
+    if (typeof navigation !== 'undefined' && typeof navigation.removeEventListener === 'function') {
+      navigation.removeEventListener('navigate', checkNavigation);
     }
     if (navDebounceTimer !== null) {
       window.clearTimeout(navDebounceTimer);
@@ -205,50 +179,24 @@ const Logger = {
     }
     window.removeEventListener('popstate', checkNavigation);
     document.removeEventListener('keydown', handleKeydown);
-    watchState = WatchState.IDLE;
-    clearAllToasts();
+    submitted = false;
+    removeToast();
   }
 
   /**
-   * Locate the language form. Try multiple selector strategies to stay
-   * resilient against minor DOM restructuring on NicoNico's side.
+   * Locate the language form on the page.
    */
   function findLanguageForm(): {
     form: HTMLFormElement;
-    input: HTMLInputElement | HTMLSelectElement;
+    input: HTMLInputElement;
   } | null {
-    // Strategy 1: input with name="language" inside a form (original approach)
     const input = document.querySelector<HTMLInputElement>(SELECTOR_LANGUAGE_INPUT);
     if (input) {
       const form = input.form ?? input.closest('form');
       if (form instanceof HTMLFormElement) return { form, input };
     }
 
-    // Strategy 2: any form that has an input with "lang" in the name or a language testid
-    const fallbackInput = document.querySelector<HTMLInputElement | HTMLSelectElement>(
-      'input[name="lang"],[data-testid="language-select"]'
-    );
-    if (fallbackInput instanceof HTMLInputElement || fallbackInput instanceof HTMLSelectElement) {
-      const form = fallbackInput.closest('form');
-      if (form instanceof HTMLFormElement) {
-        return { form, input: fallbackInput };
-      }
-    }
-
     return null;
-  }
-
-  /** Pure function: validates that a form action URL is safe to submit */
-  function isFormActionSafeAction(actionHref: string, origin: string): boolean {
-    // Empty action = submit to current page (same-origin) — always safe.
-    if (!actionHref) return true;
-    try {
-      const url = new URL(actionHref, origin);
-      if (url.origin === origin) return true;
-      return url.hostname === NICONICO_DOMAIN || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
-    } catch {
-      return false;
-    }
   }
 
   /**
@@ -256,18 +204,26 @@ const Logger = {
    * or match *.nicovideo.jp to prevent credential leakage to third parties.
    */
   function isFormActionSafe(form: HTMLFormElement): boolean {
-    return isFormActionSafeAction(form.action, window.location.origin);
+    // Empty action = submit to current page (same-origin) — always safe.
+    if (!form.action) return true;
+    try {
+      const url = new URL(form.action, window.location.origin);
+      if (url.origin === window.location.origin) return true;
+      return url.hostname === NICONICO_DOMAIN || url.hostname.endsWith(NICONICO_DOMAIN_SUFFIX);
+    } catch {
+      return false;
+    }
   }
 
   function tryChangeLanguage(): boolean {
-    if (watchState === WatchState.SUBMITTED) return true;
+    if (submitted) return true;
     if (!isEnabled()) return false;
 
     const found = findLanguageForm();
     if (!found) return false;
 
     if (!isFormActionSafe(found.form)) {
-      Logger.warn('Skipping form submission: action URL is not safe:', found.form.action);
+      log.warn('Skipping form submission: action URL is not safe:', found.form.action);
       return false;
     }
 
@@ -280,12 +236,12 @@ const Logger = {
 
       // Set state to SUBMITTED BEFORE submit() to prevent retry loops.
       // If submit() throws, we reset it in the catch block.
-      watchState = WatchState.SUBMITTED;
+      submitted = true;
       found.form.submit();
       stopWatching();
       return true;
     } catch (err) {
-      Logger.error('Failed to submit language form:', err);
+      log.error('Failed to submit language form:', err);
       toast('Failed to change language.', 'error');
       stopWatching();
       return false;
@@ -293,8 +249,7 @@ const Logger = {
   }
 
   function watchForLanguageForm(): void {
-    if (watchState === WatchState.WATCHING) return;
-    watchState = WatchState.WATCHING;
+    if (observer !== null && !submitted) return;
 
     // Scope the observer to the video player container if available.
     // If no container is found, skip observation entirely — the SPA
@@ -305,7 +260,7 @@ const Logger = {
 
     observer = new MutationObserver(() => {
       // Bail out if we were disconnected while mutations were in-flight.
-      if (watchState !== WatchState.WATCHING) return;
+      if (observer === null || submitted) return;
 
       if (debounceTimer !== null) return;
       debounceTimer = window.setTimeout(() => {
@@ -405,13 +360,11 @@ const Logger = {
    */
   function startNavObserver(): void {
     if (navObserver !== null) return;
-    if (navApiRegistered) return;
 
     // Prefer the Navigation API when available — fires only on actual
     // navigation events without observing DOM mutations site-wide.
     if (typeof navigation !== 'undefined' && typeof navigation.addEventListener === 'function') {
       navigation.addEventListener('navigate', checkNavigation);
-      navApiRegistered = true;
       return;
     }
 
@@ -429,7 +382,7 @@ const Logger = {
       // handler and initial run() call still cover back/forward navigation
       // and the initial page load. SPA transitions in Firefox/Safari on
       // non-standard page layouts may not auto-trigger language detection.
-      Logger.debug(
+      log.debug(
         'No container found for nav observer; ' +
           'SPA navigation detection limited to popstate events.'
       );
