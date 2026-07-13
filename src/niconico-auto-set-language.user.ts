@@ -272,7 +272,7 @@ const log = {
       stopWatching();
       return true;
     } catch (err) {
-      log.error('form.submit-failed', { error: String(err) });
+      log.warn('form.submit-failed', { error: String(err) });
       toast(t('toast.failed'), 'error');
       stopWatching();
       return false;
