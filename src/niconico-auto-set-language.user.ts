@@ -87,10 +87,10 @@ const log = {
 
   function setEnabled(value: boolean): void {
     if (typeof GM_setValue !== 'function') {
-      log.warn(
-        'GM_setValue unavailable — toggle state not persisted. ' +
-          'Check that @grant GM_setValue is declared in the userscript header.'
-      );
+      log.warn('storage.set-unavailable', {
+        reason: 'GM_setValue-missing',
+        hint: 'Check @grant GM_setValue in userscript header',
+      });
       return;
     }
     GM_setValue(STORAGE_KEY_ENABLED, value);
@@ -254,7 +254,7 @@ const log = {
     if (!found) return false;
 
     if (!isFormActionSafe(found.form)) {
-      log.warn('Skipping form submission: action URL is not safe:', found.form.action);
+      log.warn('form.unsafe-action', { url: found.form.action });
       return false;
     }
 
@@ -272,7 +272,7 @@ const log = {
       stopWatching();
       return true;
     } catch (err) {
-      log.error('Failed to submit language form:', err);
+      log.error('form.submit-failed', { error: String(err) });
       toast(t('toast.failed'), 'error');
       stopWatching();
       return false;
@@ -413,10 +413,9 @@ const log = {
       // handler and initial run() call still cover back/forward navigation
       // and the initial page load. SPA transitions in Firefox/Safari on
       // non-standard page layouts may not auto-trigger language detection.
-      log.debug(
-        'No container found for nav observer; ' +
-          'SPA navigation detection limited to popstate events.'
-      );
+      log.debug('observer.no-container', {
+        reason: 'limited-to-popstate-events',
+      });
     }
   }
 })();
