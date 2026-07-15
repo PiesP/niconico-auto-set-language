@@ -112,15 +112,43 @@ jobs:
           publish_dir: ./dist
           force_orphan: true
 
+      - name: 📦 Prepare release metadata
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp dist/niconico-auto-set-language.user.js release/
+          cp dist/niconico-auto-set-language.user.min.js release/
+          cp dist/niconico-auto-set-language.user.min.js.map release/
+
+          cd release && sha256sum \
+            niconico-auto-set-language.user.js \
+            niconico-auto-set-language.user.min.js \
+            niconico-auto-set-language.user.min.js.map \
+            > checksums.txt && cd ..
+
+          cat > release/metadata.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "build_date": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
+            "commit": "${{ github.sha }}",
+            "node_version": "${{ env.NODE_VERSION }}"
+          }
+          EOF
+
+          cp release/checksums.txt dist/
+          cp release/metadata.json dist/
+
       - name: 🏷️ Create GitHub Release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
           tag_name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
-            dist/niconico-auto-set-language.user.js
-            dist/niconico-auto-set-language.user.min.js
-            dist/niconico-auto-set-language.user.min.js.map
+            release/niconico-auto-set-language.user.js
+            release/niconico-auto-set-language.user.min.js
+            release/niconico-auto-set-language.user.min.js.map
+            release/checksums.txt
+            release/metadata.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
