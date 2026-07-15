@@ -50,8 +50,7 @@
         "noArrayIndexKey": "off",
         "noImplicitAnyLet": "error",
         "useIterableCallbackReturn": "error",
-        "noSelfCompare": "warn",
-        "noArrayIndexKey": "off"
+        "noSelfCompare": "warn"
       },
       "complexity": {
         "noForEach": "off",
