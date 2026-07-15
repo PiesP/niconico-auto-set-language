@@ -41,7 +41,7 @@
     "dev": "tsc --watch --project tsconfig.build.json",
     "prebuild": "pnpm -s check-versions && pnpm -s quality",
     "build": "pnpm run clean && pnpm run build:ts",
-    "verify": "pnpm run build && pnpm run build:min"
+    "verify": "pnpm -s quality && pnpm build && pnpm build:min"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
