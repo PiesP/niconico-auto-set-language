@@ -6,7 +6,15 @@
     "defaultBranch": "master"
   },
   "files": {
-    "includes": ["src/**", "scripts/**", "package.json", "tsconfig.json", "tsconfig.build.json", "knip.json", "biome.json"],
+    "includes": [
+      "src/**",
+      "scripts/**",
+      "package.json",
+      "tsconfig.json",
+      "tsconfig.build.json",
+      "knip.json",
+      "biome.json"
+    ],
     "ignoreUnknown": true
   },
   "formatter": {
