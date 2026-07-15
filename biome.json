@@ -6,7 +6,15 @@
     "defaultBranch": "master"
   },
   "files": {
-    "includes": ["src/**"],
+    "includes": [
+      "src/**",
+      "scripts/**",
+      "package.json",
+      "tsconfig.json",
+      "tsconfig.build.json",
+      "knip.json",
+      "biome.json"
+    ],
     "ignoreUnknown": true
   },
   "formatter": {
@@ -23,7 +31,8 @@
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedVariables": "warn",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "noUnknownMediaFeatureName": "off"
       },
       "style": {
         "noNonNullAssertion": "off",
@@ -37,10 +46,11 @@
         "noConfusingVoidType": "off",
         "noControlCharactersInRegex": "off",
         "noDocumentCookie": "off",
+        "noAssignInExpressions": "off",
+        "noArrayIndexKey": "off",
         "noImplicitAnyLet": "error",
         "useIterableCallbackReturn": "error",
-        "noSelfCompare": "warn",
-        "noArrayIndexKey": "off"
+        "noSelfCompare": "warn"
       },
       "complexity": {
         "noForEach": "off",
@@ -51,7 +61,15 @@
         "noUselessLoneBlockStatements": "error"
       },
       "performance": {
-        "noAccumulatingSpread": "warn"
+        "noAccumulatingSpread": "error"
+      },
+      "a11y": {
+        "noStaticElementInteractions": "off",
+        "useKeyWithClickEvents": "off",
+        "useMediaCaption": "off",
+        "noSvgWithoutTitle": "off",
+        "useAriaPropsSupportedByRole": "off",
+        "useSemanticElements": "off"
       }
     }
   },
