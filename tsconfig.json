@@ -19,6 +19,11 @@
     "isolatedModules": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "useDefineForClassFields": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".vscode/.tsbuildinfo",
     "forceConsistentCasingInFileNames": true,
     "types": [
       "tampermonkey"
