@@ -77,12 +77,15 @@ updates:
       cooldown:
         default: 7
         semver-patch: 3
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "ci(deps)"
     labels:
       - "ci"
       - "dependencies"
       - "automated"
+    reviewers:
+      - "PiesP"
     groups:
       actions:
         patterns:
