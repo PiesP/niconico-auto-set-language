@@ -44,7 +44,7 @@
     "verify": "pnpm -s quality && pnpm build && pnpm build:min"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.3",
+    "@biomejs/biome": "^2.5.4",
     "@types/tampermonkey": "^5.0.5",
     "knip": "^6.26.0",
     "rimraf": "^6.1.3",
