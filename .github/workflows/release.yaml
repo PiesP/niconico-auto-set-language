@@ -1,9 +1,9 @@
-name: "🚀 Release"
++name: 🚀 Release
 
-# Responsibility: Publish tagged userscript releases
-# - Build release assets from the tagged commit
-# - Sync userscript metadata to the release version and CDN URLs
-# - Publish files to the release branch and GitHub Releases
+# Responsibility: validate and publish tagged userscript releases.
+#
+# Validation runs independently. The publish job has the only write
+# permissions and starts only after every validation job succeeds.
 #
 # Trigger: Tag push (v*)
 
@@ -18,15 +18,55 @@ env:
   NODE_VERSION: "26"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: "🚀 Publish Release"
+  quality:
+    name: ✅ Release quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ✅ Run quality gate
+        run: pnpm quality:ci
+
+  duplication:
+    name: 🔍 Release duplication
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: 🔧 Install nose
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/install-nose.sh
+
+      - name: 🔎 Check for new duplication
+        run: nose query . --baseline .nose-baseline.json --fail-on new
+
+  build:
+    name: 🏗️ Build release package
+    needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -45,117 +85,172 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
-      - name: 🔎 Verify pnpm available
-        run: pnpm -v
-
       - name: 📝 Determine version
         id: version
         shell: bash
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
-          if [[ -z "$VERSION" ]]; then
-            echo "Error: derived version is empty" >&2
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version from tag: $VERSION (expected X.Y.Z)"
             exit 1
           fi
-
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$PACKAGE_VERSION" != "$VERSION" ]]; then
+            echo "❌ Tag version $VERSION does not match package.json $PACKAGE_VERSION"
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
+          echo "📦 Release version: $VERSION"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: 🏗️ Build userscript
-        run: pnpm build
+        run: pnpm -s build:ci
 
-      - name: 🔧 Sync userscript metadata (@version, @downloadURL, @updateURL)
+      - name: 🔧 Sync userscript metadata
         shell: bash
         run: |
           set -euo pipefail
           node --experimental-strip-types scripts/update-userscript-meta.ts \
-            dist/niconico-auto-set-language.user.js "$RELEASE_VERSION"
+            dist/niconico-auto-set-language.user.js "${{ steps.version.outputs.version }}"
 
       - name: 🗜️ Build minified userscript
         run: pnpm build:min
 
       - name: 🧪 Verify UserScript metadata
+        shell: bash
         run: |
           set -euo pipefail
-          if ! head -n 1 dist/niconico-auto-set-language.user.js | grep -q "// ==UserScript=="; then
-            echo "Error: UserScript metadata is missing from the build output"
+          FILE="dist/niconico-auto-set-language.user.js"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if ! head -n 1 "$FILE" | grep -qF "// ==UserScript=="; then
+            echo "::error::Missing UserScript metadata"
             exit 1
           fi
-          if ! grep -q "^// @version[[:space:]]\+${RELEASE_VERSION}$" dist/niconico-auto-set-language.user.js; then
-            echo "Error: @version does not match tag-derived version (${RELEASE_VERSION})"
-            grep -n "^// @version" dist/niconico-auto-set-language.user.js || true
+          if ! grep -qE "^// @version\s+${VERSION}$" "$FILE"; then
+            echo "::error::@version does not match tag-derived version"
             exit 1
           fi
-          if ! grep -q "^// @downloadURL" dist/niconico-auto-set-language.user.js; then
-            echo "Error: @downloadURL missing"
+          if ! grep -q "^// @downloadURL" "$FILE"; then
+            echo "::error::@downloadURL missing"
             exit 1
           fi
-          if ! grep -q "^// @updateURL" dist/niconico-auto-set-language.user.js; then
-            echo "Error: @updateURL missing"
+          if ! grep -q "^// @updateURL" "$FILE"; then
+            echo "::error::@updateURL missing"
             exit 1
           fi
           if [ ! -f dist/niconico-auto-set-language.user.min.js ]; then
-            echo "Error: Minified build output is missing"
+            echo "::error::Minified output is missing"
             exit 1
           fi
+
+      - name: 📦 Prepare release bundle
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p release-bundle/dist release-bundle/release
+          cp -r dist/* release-bundle/dist/
+          cp dist/niconico-auto-set-language.user.js release-bundle/release/
+          cp dist/niconico-auto-set-language.user.min.js release-bundle/release/
+          cp dist/niconico-auto-set-language.user.min.js.map release-bundle/release/
+
+          (
+            cd release-bundle/release
+            sha256sum \
+              niconico-auto-set-language.user.js \
+              niconico-auto-set-language.user.min.js \
+              niconico-auto-set-language.user.min.js.map \
+              > checksums.txt
+          )
+
+          cat > release-bundle/release/metadata.json << EOF
+          {
+            "version": "$VERSION",
+            "build_date": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
+            "commit": "${GITHUB_SHA}",
+            "node_version": "${NODE_VERSION}"
+          }
+          EOF
+
+          CHANGELOG_CONTENT="$(awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit;
+              if ($0 ~ "\\[" ver "\\]") {
+                found=1;
+                next;
+              }
+            }
+            found { print }
+          ' CHANGELOG.md)"
+          if [[ -z "${CHANGELOG_CONTENT//[[:space:]]/}" ]]; then
+            echo "❌ CHANGELOG.md has no entry for version $VERSION"
+            exit 1
+          fi
+
+          cat > release-bundle/RELEASE_NOTES.md << EOF
+          # 🚀 Release v${VERSION}
+
+          ## 📥 Installation
+
+          **[📥 Click here to install](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/niconico-auto-set-language.user.js)**
+
+          ## 📝 What's Changed
+
+          ${CHANGELOG_CONTENT}
+
+          ## 📋 Build Details
+
+          - **Commit**: \`${GITHUB_SHA}\`
+          - **Built**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          - **Node.js**: \`${NODE_VERSION}\`
+          EOF
+
+      - name: 📊 Upload release bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-bundle-${{ github.sha }}
+          path: release-bundle/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+  publish:
+    name: 🏷️ Publish GitHub Release
+    needs: [quality, duplication, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: 📥 Download release bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-bundle-${{ github.sha }}
+          path: release-bundle
 
       - name: 📤 Publish to release branch
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: release
-          publish_dir: ./dist
+          publish_dir: release-bundle/dist
           force_orphan: true
-
-      - name: 📦 Prepare release metadata
-        run: |
-          set -euo pipefail
-          mkdir -p release
-          cp dist/niconico-auto-set-language.user.js release/
-          cp dist/niconico-auto-set-language.user.min.js release/
-          cp dist/niconico-auto-set-language.user.min.js.map release/
-
-          cd release && sha256sum \
-            niconico-auto-set-language.user.js \
-            niconico-auto-set-language.user.min.js \
-            niconico-auto-set-language.user.min.js.map \
-            > checksums.txt && cd ..
-
-          cat > release/metadata.json << EOF
-          {
-            "version": "${{ steps.version.outputs.version }}",
-            "build_date": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
-            "commit": "${{ github.sha }}",
-            "node_version": "${{ env.NODE_VERSION }}"
-          }
-          EOF
-
-          cp release/checksums.txt dist/
-          cp release/metadata.json dist/
 
       - name: 🏷️ Create GitHub Release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+          body_path: release-bundle/RELEASE_NOTES.md
           files: |
-            release/niconico-auto-set-language.user.js
-            release/niconico-auto-set-language.user.min.js
-            release/niconico-auto-set-language.user.min.js.map
-            release/checksums.txt
-            release/metadata.json
+            release-bundle/release/niconico-auto-set-language.user.js
+            release-bundle/release/niconico-auto-set-language.user.min.js
+            release-bundle/release/niconico-auto-set-language.user.min.js.map
+            release-bundle/release/checksums.txt
+            release-bundle/release/metadata.json
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📊 Upload release artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-v${{ steps.version.outputs.version }}
-          path: dist/
-          if-no-files-found: error
-          retention-days: 30

@@ -28,6 +28,8 @@ updates:
     labels:
       - "dependencies"
       - "automated"
+    reviewers:
+      - "PiesP"
 
     # Auto-rebase to reduce merge conflicts
     rebase-strategy: "auto"

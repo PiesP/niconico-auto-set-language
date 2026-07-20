@@ -1,0 +1,52 @@
++name: 🔬 Deep Verification
+
+# Responsibility: expensive checks that should not block quick PR feedback
+# - Duplication checking on integrated master, scheduled, or on demand
+#
+# Mutation testing is not configured for this userscript-only project.
+
+# Security: All third-party actions pinned to full commit SHAs.
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "17 2 * * 0"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Run the duplication gate"
+        required: true
+        default: duplication
+        type: choice
+        options:
+          - duplication
+
+env:
+  NODE_VERSION: "26"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deep-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  duplication:
+    name: 🔍 Duplication
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.scope == 'duplication' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: 🔧 Install nose
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/install-nose.sh
+
+      - name: 🔎 Check for new duplication
+        run: nose query . --baseline .nose-baseline.json --fail-on new
+
