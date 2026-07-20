@@ -1,4 +1,4 @@
-+name: 🔬 Deep Verification
+name: 🔬 Deep Verification
 
 # Responsibility: expensive checks that should not block quick PR feedback
 # - Duplication checking on integrated master, scheduled, or on demand
@@ -49,4 +49,3 @@ jobs:
 
       - name: 🔎 Check for new duplication
         run: nose query . --baseline .nose-baseline.json --fail-on new
-
