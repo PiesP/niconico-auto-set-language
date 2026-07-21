@@ -40,7 +40,7 @@ function main(): void {
         const matchAnchor = content.match(/^\/\/\s*@match\s+.*$/m);
         if (matchAnchor && matchAnchor.index !== undefined) {
           const idx = matchAnchor.index + matchAnchor[0].length;
-          content = content.slice(0, idx) + '\n' + repl + content.slice(idx);
+          content = `${content.slice(0, idx)}\n${repl}${content.slice(idx)}`;
         } else {
           console.error(`Cannot insert @${key}: no @match anchor found`);
           process.exit(1);
