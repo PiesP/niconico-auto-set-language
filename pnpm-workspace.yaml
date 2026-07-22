@@ -40,4 +40,5 @@ engineStrict: true
 
 autoInstallPeers: true
 strictPeerDependencies: false
+preferFrozenLockfile: true
 preferOffline: true
