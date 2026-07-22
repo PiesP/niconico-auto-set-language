@@ -42,7 +42,8 @@
     "build": "pnpm run clean && pnpm run build:ts",
     "build:ci": "pnpm run clean && pnpm run build:ts",
     "build:all:ci": "pnpm -s check-versions && pnpm -s build:ci && pnpm build:min",
-    "verify": "pnpm -s quality && pnpm -s build:all:ci"
+    "verify:features": "node --experimental-strip-types scripts/verify-features.ts",
+    "verify": "pnpm -s quality && pnpm -s build:all:ci && pnpm -s verify:features"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
