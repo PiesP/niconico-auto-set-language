@@ -197,19 +197,6 @@ const log = {
       observer.disconnect();
       observer = null;
     }
-    if (navObserver !== null) {
-      navObserver.disconnect();
-      navObserver = null;
-    }
-    if (typeof navigation !== 'undefined' && typeof navigation.removeEventListener === 'function') {
-      navigation.removeEventListener('navigate', checkNavigation);
-    }
-    if (navDebounceTimer !== null) {
-      window.clearTimeout(navDebounceTimer);
-      navDebounceTimer = null;
-    }
-    window.removeEventListener('popstate', checkNavigation);
-    document.removeEventListener('keydown', handleKeydown);
     submitted = false;
     removeToast();
   }
@@ -334,6 +321,22 @@ const log = {
   let lastLocation = window.location.href;
   let navDebounceTimer: ReturnType<typeof window.setTimeout> | null = null;
 
+  function stopNavigationDetection(): void {
+    if (navObserver !== null) {
+      navObserver.disconnect();
+      navObserver = null;
+    }
+    if (typeof navigation !== 'undefined' && typeof navigation.removeEventListener === 'function') {
+      navigation.removeEventListener('navigate', checkNavigation);
+    }
+    if (navDebounceTimer !== null) {
+      window.clearTimeout(navDebounceTimer);
+      navDebounceTimer = null;
+    }
+    window.removeEventListener('popstate', checkNavigation);
+    document.removeEventListener('keydown', handleKeydown);
+  }
+
   function checkNavigation(): void {
     if (navDebounceTimer !== null) return;
     navDebounceTimer = window.setTimeout(() => {
@@ -375,6 +378,7 @@ const log = {
         run();
       } else {
         stopWatching();
+        stopNavigationDetection();
       }
     });
   }

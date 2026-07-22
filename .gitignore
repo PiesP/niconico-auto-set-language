@@ -65,3 +65,5 @@ desktop.ini
 
 # Local tests
 test/
+!test/
+!test/**
