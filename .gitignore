@@ -67,3 +67,4 @@ desktop.ini
 test/
 !test/
 !test/**
+test/**/AGENTS.md
