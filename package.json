@@ -26,6 +26,7 @@
     "build:dev": "pnpm run clean && pnpm run build:ts",
     "typecheck": "pnpm -s check",
     "check": "tsc --noEmit --project tsconfig.build.json",
+    "test": "node --experimental-strip-types --test",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "fmt:check": "pnpm -s fmt",

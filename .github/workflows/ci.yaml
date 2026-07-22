@@ -55,6 +55,9 @@ jobs:
       - name: ✅ Run quality gate
         run: pnpm quality
 
+      - name: 🧪 Run runtime tests
+        run: pnpm test
+
   build:
     name: 🏗️ Build userscript
     needs: quality
@@ -78,6 +81,9 @@ jobs:
 
       - name: 🏗️ Build userscript
         run: pnpm build:all:ci
+
+      - name: ✅ Verify user-facing feature contracts
+        run: pnpm verify:features
 
       - name: 🧪 Verify UserScript metadata
         shell: bash
