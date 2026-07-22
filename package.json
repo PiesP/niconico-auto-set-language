@@ -36,7 +36,6 @@
     "check-versions": "node --experimental-strip-types scripts/check-versions.ts",
     "quality": "pnpm -s fmt && pnpm -s lint && pnpm -s check && pnpm -s circular && pnpm -s knip && pnpm -s quality:nose",
     "quality:fix": "pnpm -s fmt:fix && pnpm -s lint:fix && pnpm -s check && pnpm -s circular && pnpm -s knip",
-    "quality:ci": "pnpm -s fmt && pnpm -s lint && pnpm -s check && pnpm -s circular && pnpm -s knip && pnpm -s quality:nose",
     "quality:nose": "bash -c 'if command -v nose &>/dev/null; then nose query . --baseline .nose-baseline.json --fail-on new; else echo \"[nose] not installed — skipping\"; fi'",
     "dev": "tsc --watch --project tsconfig.build.json",
     "prebuild": "pnpm -s check-versions && pnpm -s quality",
