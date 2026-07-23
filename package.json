@@ -37,7 +37,7 @@
     "check-versions": "node --experimental-strip-types scripts/check-versions.ts",
     "quality": "pnpm -s fmt && pnpm -s lint && pnpm -s check && pnpm -s circular && pnpm -s knip && pnpm -s quality:nose",
     "quality:fix": "pnpm -s fmt:fix && pnpm -s lint:fix && pnpm -s check && pnpm -s circular && pnpm -s knip",
-    "quality:nose": "bash -c 'if command -v nose &>/dev/null; then nose query . --baseline .nose-baseline.json --fail-on new; else echo \"[nose] not installed — skipping\"; fi'",
+    "quality:nose": "bash -c 'if command -v nose &>/dev/null; then nose query . --baseline .nose-baseline.json --fail-on new; else echo \"[nose] not installed \u2014 skipping\"; fi'",
     "dev": "tsc --watch --project tsconfig.build.json",
     "prebuild": "pnpm -s check-versions && pnpm -s quality",
     "build": "pnpm run clean && pnpm run build:ts",
@@ -52,7 +52,8 @@
     "knip": "^6.27.0",
     "rimraf": "^6.1.3",
     "terser": "^5.49.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "tsx": "^4.19.0"
   },
   "volta": {
     "node": "26.5.0",

@@ -113,7 +113,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --experimental-strip-types scripts/update-userscript-meta.ts \
+          npx tsx scripts/update-userscript-meta.ts \
             dist/niconico-auto-set-language.user.js "${{ steps.version.outputs.version }}"
 
       - name: 🗜️ Build minified userscript
@@ -254,3 +254,28 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  purge-cdn:
+    name: 🔄 Purge jsDelivr CDN cache
+    needs: publish
+    if: ${{ needs.publish.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: 🔄 Purge userscript cache
+        run: |
+          set -euo pipefail
+          echo "🔄 Purging jsDelivr CDN cache..."
+
+          for asset in niconico-auto-set-language.user.js niconico-auto-set-language.user.min.js; do
+            purge_url="https://purge.jsdelivr.net/gh/${{ github.repository }}@release/${asset}"
+            echo "Purging: $purge_url"
+            purge_response="$(curl --fail --silent --show-error --location \
+              --proto '=https' --tlsv1.2 "$purge_url")"
+            echo "$purge_response" | jq -e '.success == true' >/dev/null
+          done
+
+          echo "✅ jsDelivr cache purge completed"
