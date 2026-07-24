@@ -71,12 +71,18 @@ const log = {
   const NICONICO_DOMAIN_SUFFIX = `.${NICONICO_DOMAIN}`;
 
   const TOAST_BASE_STYLE =
-    'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);cursor:pointer;transition:transform 0.15s;background:';
+    'position:fixed;top:10px;right:10px;color:#fff;padding:10px 12px;border-radius:6px;z-index:2147483647;font:13px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.18);cursor:pointer;transition:opacity 0.15s;background:';
 
   const TOAST_COLORS: Record<'error' | 'info' | 'success', string> = {
-    error: '#f44336',
-    info: '#2196F3',
-    success: '#4CAF50',
+    error: '#d32f2f',
+    info: '#1976d2',
+    success: '#388e3c',
+  };
+
+  const TOAST_ICONS: Record<'error' | 'info' | 'success', string> = {
+    error: '\u2717 ',
+    info: '\u2139 ',
+    success: '\u2713 ',
   };
 
   // SSOT: GM storage is the single source of truth for enabled state
@@ -101,8 +107,10 @@ const log = {
   let observeTimeout: ReturnType<typeof window.setTimeout> | null = null;
   let debounceTimer: ReturnType<typeof window.setTimeout> | null = null;
   let navObserver: MutationObserver | null = null;
-  let currentToast: { el: HTMLDivElement; timers: ReturnType<typeof window.setTimeout>[] } | null =
-    null;
+  let currentToast: {
+    el: HTMLButtonElement;
+    timers: ReturnType<typeof window.setTimeout>[];
+  } | null = null;
 
   function toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     if (!document.body) return;
@@ -110,15 +118,20 @@ const log = {
     // Remove existing toast before showing a new one
     removeToast();
 
-    const el = document.createElement('div');
-    el.textContent = message;
+    const el = document.createElement('button');
+    el.textContent = TOAST_ICONS[type] + message;
     el.style.cssText = TOAST_BASE_STYLE + TOAST_COLORS[type];
     el.setAttribute('role', 'alert');
     el.setAttribute('aria-live', 'assertive');
-    el.setAttribute('tabindex', '0');
 
-    // Allow keyboard dismiss: clicking removes the toast.
+    // Keyboard dismiss: Enter/Space removes the toast
     el.addEventListener('click', () => removeToast());
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        removeToast();
+      }
+    });
 
     // Focus-visible outline: visual indicator for keyboard navigation
     el.addEventListener('focus', () => {
@@ -128,14 +141,6 @@ const log = {
     el.addEventListener('blur', () => {
       el.style.outline = '';
       el.style.outlineOffset = '';
-    });
-
-    // Hover: slight scale-up for visual feedback
-    el.addEventListener('mouseenter', () => {
-      el.style.transform = 'scale(1.04)';
-    });
-    el.addEventListener('mouseleave', () => {
-      el.style.transform = '';
     });
 
     document.body.appendChild(el);
